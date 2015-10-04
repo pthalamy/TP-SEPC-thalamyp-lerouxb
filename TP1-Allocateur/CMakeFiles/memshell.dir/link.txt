@@ -1,0 +1,1 @@
+/usr/bin/cc   -I/usr/include -pthread -g -Wall -Werror -std=gnu99    -L/usr/lib64 -lgtest -pthread -lgtest_main CMakeFiles/memshell.dir/src/memshell.c.o  -o memshell -rdynamic liballocphy.so -Wl,-rpath,/user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur 
