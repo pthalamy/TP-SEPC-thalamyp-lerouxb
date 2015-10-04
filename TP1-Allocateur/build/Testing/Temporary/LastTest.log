@@ -1,10 +1,10 @@
-Start testing: Oct 04 14:06 CEST
+Start testing: Oct 04 14:15 CEST
 ----------------------------------------------------------
 1/1 Testing: AllTestsAllocator
 1/1 Test: AllTestsAllocator
 Command: "/user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/build/alloctest"
 Directory: /user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/build
-"AllTestsAllocator" start time: Oct 04 14:06 CEST
+"AllTestsAllocator" start time: Oct 04 14:15 CEST
 Output:
 ----------------------------------------------------------
 [==========] Running 13 tests from 3 test cases.
@@ -17,8 +17,8 @@ Output:
 [ RUN      ] Init.oneallocloop
 /user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/tests/test_generic.cc:30: Failure
 Expected: (m1) != ((void *)0), actual: (null) vs (null)
-[  FAILED  ] Init.oneallocloop (0 ms)
-[----------] 3 tests from Init (0 ms total)
+[  FAILED  ] Init.oneallocloop (1 ms)
+[----------] 3 tests from Init (1 ms total)
 
 [----------] 7 tests from BaseMemTest
 [ RUN      ] BaseMemTest.allocnone
@@ -47,7 +47,7 @@ Expected: (m1) != ((void *)0), actual: (null) vs (null)
 /user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/tests/test_generic.cc:171: Failure
 Expected: (mref) != ((void *)0), actual: (null) vs (null)
 [  FAILED  ] BaseMemTest.aleatoire (0 ms)
-[----------] 7 tests from BaseMemTest (1 ms total)
+[----------] 7 tests from BaseMemTest (0 ms total)
 
 [----------] 3 tests from Variantes
 [ RUN      ] Variantes.buddy
@@ -78,8 +78,8 @@ Expected: (mref) != ((void*) 0), actual: (null) vs (null)
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Failed.
-"AllTestsAllocator" end time: Oct 04 14:06 CEST
+"AllTestsAllocator" end time: Oct 04 14:15 CEST
 "AllTestsAllocator" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Oct 04 14:06 CEST
+End testing: Oct 04 14:15 CEST

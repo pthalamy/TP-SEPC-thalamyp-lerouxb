@@ -6,16 +6,23 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <stdint.h>
 #include "mem.h"
 
 /** squelette du TP allocateur memoire */
 
 void *zone_memoire = 0;
 
-/* ecrire votre code ici */
+/* STRUCTURES: */
+/* Blocs de la forme (suivant, ...) */
+typedef struct _BlocZL {
+    struct _BlocZL *suivant;
+    /* ??? */
+} BlocZL;
+/* TZL sous forme de tableau de blocs? */
+BlocZL *TZL;
 
-int 
+int
 mem_init()
 {
   if (! zone_memoire)
@@ -35,10 +42,10 @@ void *
 mem_alloc(unsigned long size)
 {
   /*  ecrire votre code ici */
-  return 0;  
+  return 0;
 }
 
-int 
+int
 mem_free(void *ptr, unsigned long size)
 {
   /* ecrire votre code ici */
@@ -55,4 +62,3 @@ mem_destroy()
   zone_memoire = 0;
   return 0;
 }
-
