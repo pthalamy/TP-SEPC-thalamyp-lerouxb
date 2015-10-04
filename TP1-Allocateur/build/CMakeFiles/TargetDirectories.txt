@@ -1,0 +1,4 @@
+/user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/build/CMakeFiles/allocphy.dir
+/user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/build/CMakeFiles/alloctest.dir
+/user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/build/CMakeFiles/check.dir
+/user/9/thalamyp/Cours/2A/SEPC/TP-SEPC-thalamyp-lerouxb/TP1-Allocateur/build/CMakeFiles/memshell.dir
