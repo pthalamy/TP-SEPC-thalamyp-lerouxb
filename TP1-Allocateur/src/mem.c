@@ -16,11 +16,23 @@ void *zone_memoire = 0;
 /* STRUCTURES: */
 /* Blocs de la forme (suivant, ...) */
 typedef struct _BlocZL {
-    struct _BlocZL *suivant;
+    struct _BlocZL *next;
+    struct _BlocZL *prev;
     void *addr;
 } BlocZL;
+
 /* TZL sous forme de tableau de blocs? */
-BlocZL *TZL;
+BlocZL **TZL;
+
+/* static void enqueue_bloc(BlocZL *head, BlocZL b) */
+/* { */
+/*     return; */
+/* } */
+
+/* static BlocZL *search_bloc(BlocZL *head, void *addr) */
+/* { */
+/*     return NULL; */
+/* } */
 
 int mem_init()
 {
