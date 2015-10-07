@@ -18,10 +18,19 @@
 void *zone_memoire = 0;
 
 /* TZL sous forme de tableau de tableaux */
-uintptr_t *TZL[20] = {NULL};
+uintptr_t *TZL[20] = {NULL};	/* TODO: VARIABLE INDEX */
 
-/* Bon j'ai tellement change les pointeurs en essayant different dereferencement que ya surement des erreurs dans les pointeurs */
+void print_blocList(uintptr_t *head)
+{
+    uintptr_t *cour = head;
 
+    while (*cour) {
+	printf ("%p -> ", (void *)(*cour));
+	cour = (uintptr_t *)(*cour);
+    }
+
+    printf ("NULL\n");
+}
 
 void insert_bloc_head(uintptr_t *ptr, int size) {
 
@@ -70,8 +79,10 @@ int mem_init() {
     /* ecrire votre code ici */
     /* On entre l'adresse dans la zone_memoire */
     /* TZL vide sauf deniere case, bloc memoire complet */
+    TZL[20] = (uintptr_t *)zone_memoire;
+    *TZL[20] = 0;
 
-    return 0;
+    return 0;;
 }
 
 void *mem_alloc(unsigned long size) {
@@ -80,6 +91,7 @@ void *mem_alloc(unsigned long size) {
     /* Regarde si TZL[log2(size - 1) + 1] comprend un bloc libre  */
     /* Si oui, retire de la tzl et retourne l'@ associée */
     /* Sinon, recherche récursive d'un bloc d'ordre supérieur à diviser */
+
 
     return 0;
 }
@@ -107,7 +119,7 @@ int mem_free(void *ptr, unsigned long size) {
 
 int mem_destroy() {
     /* ecrire votre code ici */
-    /* Free des cellules des listes de la TZL, puis free de la TZL */
+
 
     free(zone_memoire);
     zone_memoire = 0;
