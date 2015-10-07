@@ -23,33 +23,33 @@ uintptr_t *TZL[20] = {NULL};
 /* Bon j'ai tellement change les pointeurs en essayant different dereferencement que ya surement des erreurs dans les pointeurs */
 
 
-void insert_bloc_head(uintptr_t *ptr, int size) {
+void insert_bloc_head(uintptr_t *ptr, int indice) {
 
-    if (TZL[size] == NULL) { // Il n'y a pas encore de blocs de cette taille
-	TZL[size] = ptr;
-	*TZL[size] = 0;
+    if (TZL[indice] == NULL) { // Il n'y a pas encore de blocs de cette taille
+	TZL[indice] = ptr;
+	*TZL[indice] = 0;
     }
     // Sinon on ajoute en tete
     else {
-	uintptr_t *temp = TZL[size];
-	TZL[size] = ptr;
+	uintptr_t *temp = TZL[indice];
+	TZL[indice] = ptr;
 	ptr = temp;
     }
 
 }
 
-bool find_and_delete(uintptr_t ptr, int size) {
+bool find_and_delete(uintptr_t *ptr, int indice) {
 
-    uintptr_t *suiv, *cour = TZL[size];
+    uintptr_t *suiv, *cour = TZL[indice];
 
     /* Le bloc est en tête de liste */
-    if (*cour == ptr) {
-        TZL[size] = (uintptr_t *)ptr;
+    if (*cour == *ptr) {
+        TZL[indice] = (uintptr_t *)ptr;
 	return true;
     } else {			/*  */
 	while ((uintptr_t *)(*cour) != NULL) {
 	    suiv = (uintptr_t *)(*cour);
-	    if (*suiv == ptr) {
+	    if (*suiv == *ptr) {
 		*cour = *suiv;
 		return true;
 	    }
@@ -86,20 +86,24 @@ void *mem_alloc(unsigned long size) {
 
 int mem_free(void *ptr, unsigned long size) {
     /* ecrire votre code ici */
+
+    uintptr_t *PTR = (uintptr_t *)ptr;
+
     uint16_t indice = pow(2, log(size - 1) / log(2) + 1);
     /* xor entre @ et log2(size) + ? afin de trouver le buddy */
-    void *buddy = *ptr ^ indice;
+    uintptr_t buddy = (*((uintptr_t *)PTR) ^ indice);
 
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
-    while (find_and_delete(TZL[indice], buddy)) {
+    while (find_and_delete((uintptr_t *)buddy, indice)) {
     	++indice;
     	if (indice == log(ALLOC_MEM_SIZE) / log(2))
     	    break;
+	buddy = *((uintptr_t *)PTR) ^ indice;
     }
 
-    /* Sinon, on se contente d'ajouter le bloc libéré à la TZL */
-    insert_bloc_head(&TZL[indice], ptr);
+    /* Puis on l'ajoute a la bonne place */
+	insert_bloc_head(PTR, indice);
 
     return 0;
 }
