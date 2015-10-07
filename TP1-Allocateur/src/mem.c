@@ -8,17 +8,59 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <stdbool.h>
 #include "mem.h"
+
+#define ADD_SIZE sizeof(void *)
 
 /** squelette du TP allocateur memoire */
 
 void *zone_memoire = 0;
 
 /* TZL sous forme de tableau de tableaux */
-int32_t TZL[21][ALLOC_MEM_SIZE] = {{0}};
+void *TZL[20] = {NULL};
 
-int mem_init()
-{
+/* Bon j'ai tellement change les pointeurs en essayant different dereferencement que ya surement des erreurs dans les pointeurs */
+
+
+void insert_bloc_head(void *ptr, int size) {
+
+    if (TZL[size] == NULL) { // Il n'y a pas encore de blocs de cette taille
+	TZL[size] = ptr;
+	*TZL[size] = NULL;
+    }
+    // Sinon on ajoute en tete
+    else {
+	void *temp = TZL[size];
+	TZL[size] = ptr;
+	ptr = temp;
+    }
+
+}
+
+bool find_and_delete(void *ptr, int size) {
+
+    void *suiv, *cour = TZL[size];
+
+    if (cour == *ptr) {
+        TZL[size] = *ptr;
+	return true;
+    }
+
+    else {
+	while (cour != NULL) {
+	    suiv = *cour;
+	    if (suiv == ptr) {
+		cour = *suiv;
+		return true;
+	    }
+	    cour = suiv;
+	}
+    }
+	return false;
+}
+
+int mem_init() {
     if (! zone_memoire)
 	zone_memoire = (void *) malloc(ALLOC_MEM_SIZE);
     if (zone_memoire == 0) {
@@ -27,14 +69,13 @@ int mem_init()
     }
 
     /* ecrire votre code ici */
-    /* Allocation de la table de TZL de taille log2(ALLOC_MEM_SIZE) + 1 */
+    /* On entre l'adresse dans la zone_memoire */
     /* TZL vide sauf deniere case, bloc memoire complet */
 
     return 0;
 }
 
-void *mem_alloc(unsigned long size)
-{
+void *mem_alloc(unsigned long size) {
     /*  ecrire votre code ici */
     /* Check que size > 0 */
     /* Regarde si TZL[log2(size - 1) + 1] comprend un bloc libre  */
@@ -44,8 +85,7 @@ void *mem_alloc(unsigned long size)
     return 0;
 }
 
-int mem_free(void *ptr, unsigned long size)
-{
+int mem_free(void *ptr, unsigned long size) {
     /* ecrire votre code ici */
     /* uint16_t indice = pow(2, log(size - 1) / log(2) + 1); */
     /* xor entre @ et log2(size) + ? afin de trouver le buddy */
@@ -66,8 +106,7 @@ int mem_free(void *ptr, unsigned long size)
 }
 
 
-int mem_destroy()
-{
+int mem_destroy() {
     /* ecrire votre code ici */
     /* Free des cellules des listes de la TZL, puis free de la TZL */
 
