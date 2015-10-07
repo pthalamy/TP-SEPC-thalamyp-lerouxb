@@ -32,7 +32,7 @@ void print_blocList(uintptr_t *head)
     printf ("NULL\n");
 }
 
-void insert_bloc_head(uintptr_t *ptr, int size) {
+void insert_bloc_head(uintptr_t *ptr, uint16_t size) {
 
     if (TZL[size] == NULL) { // Il n'y a pas encore de blocs de cette taille
 	TZL[size] = ptr;
@@ -47,7 +47,7 @@ void insert_bloc_head(uintptr_t *ptr, int size) {
 
 }
 
-bool find_and_delete(uintptr_t ptr, int size) {
+bool find_and_delete(uintptr_t ptr, uint16_t size) {
 
     uintptr_t *suiv, *cour = TZL[size];
 
@@ -88,12 +88,25 @@ int mem_init() {
 void *mem_alloc(unsigned long size) {
     /*  ecrire votre code ici */
     /* Check que size > 0 */
+    if (size <= 0) {
+	fprintf (stderr,
+		 "erreur: Allocation d'une zone de taille %ld interdite !\n",
+		 size);
+	return 0;
+    }
+
     /* Regarde si TZL[log2(size - 1) + 1] comprend un bloc libre  */
     /* Si oui, retire de la tzl et retourne l'@ associée */
+    uintptr_t freeBlock = *TZL[size]; /* TODO: PROPER INDEX! */
+    if (freeBlock) {
+	find_and_delete (freeBlock ,size); /* TODO: PROPER INDEX! 2 */
+	return (void *)freeBlock;
+    }
     /* Sinon, recherche récursive d'un bloc d'ordre supérieur à diviser */
-
-
-    return 0;
+    else {
+	/* TODO */
+	return 0;
+    }
 }
 
 int mem_free(void *ptr, unsigned long size) {
