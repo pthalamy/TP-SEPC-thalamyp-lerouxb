@@ -87,20 +87,20 @@ void *mem_alloc(unsigned long size) {
 
 int mem_free(void *ptr, unsigned long size) {
     /* ecrire votre code ici */
-    /* uint16_t indice = pow(2, log(size - 1) / log(2) + 1); */
+    uint16_t indice = pow(2, log(size - 1) / log(2) + 1);
     /* xor entre @ et log2(size) + ? afin de trouver le buddy */
-    /* void *buddy = *ptr ^ indice; */
+    void *buddy = *ptr ^ indice;
 
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
-    /* while (search_and_remove_bloc(TZL[indice], buddy)) { */
-    /* 	++indice; */
-    /* 	if (indice == log(ALLOC_MEM_SIZE) / log(2)) */
-    /* 	    break; */
-    /* } */
+    while (find_and_delete(TZL[indice], buddy)) {
+    	++indice;
+    	if (indice == log(ALLOC_MEM_SIZE) / log(2))
+    	    break;
+    }
 
     /* Sinon, on se contente d'ajouter le bloc libéré à la TZL */
-    /* insert_bloc(&TZL[indice], ptr); */
+    insert_bloc_head(&TZL[indice], ptr);
 
     return 0;
 }
