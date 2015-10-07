@@ -18,40 +18,39 @@
 void *zone_memoire = 0;
 
 /* TZL sous forme de tableau de tableaux */
-void *TZL[20] = {NULL};
+uintptr_t *TZL[20] = {NULL};
 
 /* Bon j'ai tellement change les pointeurs en essayant different dereferencement que ya surement des erreurs dans les pointeurs */
 
 
-void insert_bloc_head(void *ptr, int size) {
+void insert_bloc_head(uintptr_t *ptr, int size) {
 
     if (TZL[size] == NULL) { // Il n'y a pas encore de blocs de cette taille
 	TZL[size] = ptr;
-	*TZL[size] = NULL;
+	*TZL[size] = 0;
     }
     // Sinon on ajoute en tete
     else {
-	void *temp = TZL[size];
+	uintptr_t *temp = TZL[size];
 	TZL[size] = ptr;
 	ptr = temp;
     }
 
 }
 
-bool find_and_delete(void *ptr, int size) {
+bool find_and_delete(uintptr_t ptr, int size) {
 
-    void *suiv, *cour = TZL[size];
+    uintptr_t *suiv, *cour = TZL[size];
 
-    if (cour == *ptr) {
-        TZL[size] = *ptr;
+    /* Le bloc est en tête de liste */
+    if (*cour == ptr) {
+        TZL[size] = (uintptr_t *)ptr;
 	return true;
-    }
-
-    else {
-	while (cour != NULL) {
-	    suiv = *cour;
-	    if (suiv == ptr) {
-		cour = *suiv;
+    } else {			/*  */
+	while ((uintptr_t *)(*cour) != NULL) {
+	    suiv = (uintptr_t *)(*cour);
+	    if (*suiv == ptr) {
+		*cour = *suiv;
 		return true;
 	    }
 	    cour = suiv;
