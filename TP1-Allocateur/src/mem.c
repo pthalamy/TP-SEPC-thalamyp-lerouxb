@@ -65,20 +65,20 @@ bool find_and_delete(uintptr_t *ptr, uint16_t indice) {
     uintptr_t *suiv, *cour = TZL[indice];
 
     /* Le bloc est en tête de liste */
-    if (*cour == *ptr) {
-        TZL[indice] = (uintptr_t *)ptr;
+    if ((uintptr_t *)(*cour) == ptr) {
+	if (ptr)
+	    TZL[indice] = (uintptr_t *)(*ptr);
  	return true;
-    } else {			/*  */
-	while ((uintptr_t *)(*cour) != NULL) {
+    } else {
+	while ((*cour) != 0) {
 	    suiv = (uintptr_t *)(*cour);
-	    if (*suiv == *ptr) {
-		*cour = *suiv;
+	    if ((uintptr_t *)(*suiv) == ptr) {
+		cour = (uintptr_t *)(*suiv);
 		return true;
 	    }
-	    cour = suiv;
+	    cour = (uintptr_t *)(*suiv);
 	}
     }
-
     return false;
 }
 
@@ -144,8 +144,8 @@ void *mem_alloc(unsigned long size) {
 	    return NULL;
     }
 
-    uintptr_t freeBlock = *TZL[order];
-    find_and_delete ((uintptr_t *)freeBlock, order);
+    uintptr_t *freeBlock = TZL[order];
+    find_and_delete (freeBlock, order);
 
     return (void *)freeBlock;
 }

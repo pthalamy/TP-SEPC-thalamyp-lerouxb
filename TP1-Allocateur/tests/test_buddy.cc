@@ -10,19 +10,21 @@
 
 TEST(Variantes,buddy) {
   int multi = 0;
-  
+
 #ifndef BUDDY
   return;
 #else
   multi = 1;
 #endif
-  
+
   ASSERT_EQ(multi, 1);
   ASSERT_EQ( mem_init(), 0 );
 
   void *mref = mem_alloc(ALLOC_MEM_SIZE);
   ASSERT_NE( mref, (void*) 0);
+  printf("ALLOC1__OK\n");
   ASSERT_EQ( mem_free(mref, ALLOC_MEM_SIZE), 0 );
+  printf("FREE1_OK\n");
 
   void *m1 = mem_alloc(64);
   ASSERT_NE( m1, (void *)0 );
