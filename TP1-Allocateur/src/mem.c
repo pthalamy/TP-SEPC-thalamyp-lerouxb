@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <math.h>
 #include <stdbool.h>
 #include "mem.h"
 
@@ -18,7 +17,18 @@
 void *zone_memoire = 0;
 
 /* TZL sous forme de tableau de tableaux */
-uintptr_t *TZL[20] = {NULL};	/* TODO: VARIABLE INDEX */
+uintptr_t *TZL[21] = {NULL};	/* TODO: VARIABLE INDEX */
+
+static uint16_t get_pow_sup(unsigned long size) {
+
+    uint16_t i = 31;
+
+    while (((size - 1)>>i) > 0 && i >= 0)
+	--i;
+
+    return i+1;
+}
+
 
 void print_blocList(uintptr_t *head)
 {
@@ -33,7 +43,7 @@ void print_blocList(uintptr_t *head)
 }
 
 
-void insert_bloc_head(uintptr_t *ptr, int indice) {
+void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
 
     if (TZL[indice] == NULL) { // Il n'y a pas encore de blocs de cette taille
 	TZL[indice] = ptr;
@@ -49,7 +59,7 @@ void insert_bloc_head(uintptr_t *ptr, int indice) {
 }
 
 
-bool find_and_delete(uintptr_t *ptr, int indice) {
+bool find_and_delete(uintptr_t *ptr, uint16_t indice) {
 
     uintptr_t *suiv, *cour = TZL[indice];
 
@@ -112,19 +122,18 @@ void *mem_alloc(unsigned long size) {
 }
 
 int mem_free(void *ptr, unsigned long size) {
-    /* ecrire votre code ici */
 
     uintptr_t *PTR = (uintptr_t *)ptr;
+    uint16_t indice = get_pow_sup(size);
 
-    uint16_t indice = pow(2, log(size - 1) / log(2) + 1);
-    /* xor entre @ et log2(size) + ? afin de trouver le buddy */
-    uintptr_t buddy = (*((uintptr_t *)PTR) ^ indice);
+    /* xor entre @ et 2^indice afin de trouver le buddy */
+    uintptr_t buddy = *((uintptr_t *)PTR) ^ (1<<indice);
 
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
     	++indice;
-    	if (indice == log(ALLOC_MEM_SIZE) / log(2))
+    	if (indice == 20)
     	    break;
 	buddy = *((uintptr_t *)PTR) ^ indice;
     }
