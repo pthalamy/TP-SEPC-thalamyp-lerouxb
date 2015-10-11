@@ -17,16 +17,16 @@
 void *zone_memoire = 0;
 
 /* TZL sous forme de tableau de tableaux */
-uintptr_t *TZL[21] = {NULL};	/* TODO: VARIABLE INDEX */
+uintptr_t *TZL[BUDDY_MAX_INDEX + 1] = {NULL};
 
 static uint16_t get_pow_sup(unsigned long size) {
 
-    uint16_t i = 31;
+    int16_t i = BUDDY_MAX_INDEX;
 
-    while (((size - 1)>>i) > 0 && i >= 0)
+    while (((size - 1) >> i) == 0 && i >= 0)
 	--i;
 
-    return i+1;
+    return (uint16_t)i+1;
 }
 
 
@@ -66,7 +66,7 @@ bool find_and_delete(uintptr_t *ptr, uint16_t indice) {
     /* Le bloc est en tête de liste */
     if (*cour == *ptr) {
         TZL[indice] = (uintptr_t *)ptr;
-	return true;
+ 	return true;
     } else {			/*  */
 	while ((uintptr_t *)(*cour) != NULL) {
 	    suiv = (uintptr_t *)(*cour);
@@ -77,7 +77,25 @@ bool find_and_delete(uintptr_t *ptr, uint16_t indice) {
 	    cour = suiv;
 	}
     }
-	return false;
+
+    return false;
+}
+
+static int divide_block (uint16_t order)
+{
+    if (order >= 20) {
+	fprintf(stderr, "error: Not enough space! \n");
+	return -1;
+    }
+
+    if (TZL[order] == NULL)
+        divide_block(order + 1);
+
+    insert_bloc_head((uintptr_t *)*TZL[order], order - 1);
+    insert_bloc_head((uintptr_t *)(*TZL[order] + (1 << (order-1))), order - 1);
+    find_and_delete(TZL[order], order);
+
+    return 0;
 }
 
 int mem_init() {
@@ -91,34 +109,35 @@ int mem_init() {
     /* ecrire votre code ici */
     /* On entre l'adresse dans la zone_memoire */
     /* TZL vide sauf deniere case, bloc memoire complet */
-    TZL[20] = (uintptr_t *)zone_memoire;
-    *TZL[20] = 0;
+    TZL[BUDDY_MAX_INDEX] = (uintptr_t *)zone_memoire;
 
-    return 0;;
+    printf ("mem @%p\n", zone_memoire);
+
+    return 0;
 }
 
 void *mem_alloc(unsigned long size) {
-    /*  ecrire votre code ici */
-    /* Check que size > 0 */
+     /* Check que size > 0 */
     if (size <= 0) {
 	fprintf (stderr,
 		 "erreur: Allocation d'une zone de taille %ld interdite !\n",
 		 size);
-	return 0;
+	return NULL;
     }
 
     /* Regarde si TZL[log2(size - 1) + 1] comprend un bloc libre  */
     /* Si oui, retire de la tzl et retourne l'@ associée */
-    uintptr_t freeBlock = *TZL[size]; /* TODO: PROPER INDEX! */
-    if (freeBlock) {
-	find_and_delete ((uintptr_t *)freeBlock ,size); /* TODO: PROPER INDEX! 2 */
-	return (void *)freeBlock;
+    uint16_t order = get_pow_sup(size);
+
+    if (!TZL[order]) {
+	if (divide_block (order))
+	    return NULL;
     }
-    /* Sinon, recherche récursive d'un bloc d'ordre supérieur à diviser */
-    else {
-	/* TODO */
-	return 0;
-    }
+
+    uintptr_t freeBlock = *TZL[order];
+    find_and_delete ((uintptr_t *)freeBlock, order);
+
+    return (void *)freeBlock;
 }
 
 int mem_free(void *ptr, unsigned long size) {
@@ -139,7 +158,7 @@ int mem_free(void *ptr, unsigned long size) {
     }
 
     /* Puis on l'ajoute a la bonne place */
-	insert_bloc_head(PTR, indice);
+    insert_bloc_head(PTR, indice);
 
     return 0;
 }
