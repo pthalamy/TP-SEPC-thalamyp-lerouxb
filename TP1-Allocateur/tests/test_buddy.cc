@@ -28,10 +28,12 @@ TEST(Variantes,buddy) {
 
   void *m1 = mem_alloc(64);
   ASSERT_NE( m1, (void *)0 );
+  printf("ALLOC2__OK\n");
   memset( m1, 0, 1);
 
   void *m2 = mem_alloc(64);
   ASSERT_NE( m2, (void *)0 );
+  printf("ALLOC3__OK\n");
   memset( m2, 0, 1);
 
   unsigned long vref = (unsigned long) mref;

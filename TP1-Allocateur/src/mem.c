@@ -67,7 +67,7 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
     /* Le bloc est en tête de liste */
     if ((uintptr_t *)(*cour) == ptr) {
 	if (ptr)
-	    TZL[indice] = (uintptr_t *)(*ptr);
+	    TZL[ordre] = (uintptr_t *)(*ptr);
  	return true;
     } else {
 	while ((*cour) != 0) {
@@ -93,7 +93,7 @@ static int divide_block (uint16_t order)
         divide_block(order + 1);
 
     insert_bloc_head((uintptr_t *)TZL[order], order - 1);
-    insert_bloc_head((uintptr_t *)(TZL[order] + (1 << (order-1))), order - 1);
+    insert_bloc_head((uintptr_t *)((uintptr_t)TZL[order] + (1 << (order-1))), order - 1);
     find_and_delete(TZL[order], order);
 
     return 0;
@@ -159,13 +159,13 @@ int mem_free(void *ptr, unsigned long size) {
     uint16_t indice = get_pow_sup(size);
 
     /* xor entre @ et 2^indice afin de trouver le buddy */
-    uintptr_t buddy = *((uintptr_t *)PTR) ^ (1<<indice);
+    uintptr_t buddy = *PTR ^ (1<<indice);
 
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
     	++indice;
-    	if (indice == 20)
+    	if (indice == 21)
     	    break;
 	buddy = *((uintptr_t *)PTR) ^ indice;
     }
@@ -173,6 +173,7 @@ int mem_free(void *ptr, unsigned long size) {
     /* Puis on l'ajoute a la bonne place */
     insert_bloc_head(PTR, indice);
 
+    printf("TZL[%d] = %p\n", indice, TZL[indice]);
     return 0;
 }
 
