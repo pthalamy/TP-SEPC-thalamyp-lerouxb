@@ -115,7 +115,7 @@ int mem_init() {
 
     mem_initialized = true;
 
-    fprintf (stderr, "mem @%p\n", zone_memoire);
+    fprintf (stderr, "init mem @%p\n", zone_memoire);
 
     return 0;
 }
@@ -139,8 +139,6 @@ void *mem_alloc(unsigned long size) {
     /* Regarde si TZL[log2(size - 1) + 1] comprend un bloc libre  */
     /* Si oui, retire de la tzl et retourne l'@ associée */
     uint16_t order = get_pow_sup(size);
-    fprintf (stderr,
-	     "mem_alloc of size %ld, order %d\n", size, order);
 
     if (!TZL[order]) {
 	if (divide_block (order))
@@ -149,6 +147,9 @@ void *mem_alloc(unsigned long size) {
 
     uintptr_t *freeBlock = TZL[order];
     find_and_delete (freeBlock, order);
+
+    fprintf (stderr,
+	     "alloc block @%p of size %ld\n", freeBlock, size);
 
     return (void *)freeBlock;
 }
@@ -159,21 +160,30 @@ int mem_free(void *ptr, unsigned long size) {
     uint16_t indice = get_pow_sup(size);
 
     /* xor entre @ et 2^indice afin de trouver le buddy */
-    uintptr_t buddy = *PTR ^ (1<<indice);
+    uintptr_t buddy = (uintptr_t)PTR ^ (1<<indice);
+
+    printf ("error in free!\n");
 
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
-    	++indice;
-    	if (indice == 21)
+	fprintf (stderr,
+		 "buddy @%p of size %ld found!\n", (void*)buddy, size);
+
+
+     	++indice;
+    	if (indice == BUDDY_MAX_INDEX)
     	    break;
-	buddy = *((uintptr_t *)PTR) ^ indice;
-    }
+	buddy = (uintptr_t)PTR ^ (1 << indice);
+     }
 
     /* Puis on l'ajoute a la bonne place */
     insert_bloc_head(PTR, indice);
 
-    printf("TZL[%d] = %p\n", indice, TZL[indice]);
+    fprintf (stderr,
+	     "free block @%p of size %ld\n", ptr, size);
+
+    /* printf("TZL[%d] = %p\n", indice, TZL[indice]); */
     return 0;
 }
 
@@ -181,6 +191,7 @@ int mem_free(void *ptr, unsigned long size) {
 int mem_destroy() {
     /* ecrire votre code ici */
     mem_initialized = false;
+    fprintf (stderr, "destroy mem @%p\n", zone_memoire);
 
     free(zone_memoire);
     zone_memoire = 0;
