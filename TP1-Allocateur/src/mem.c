@@ -60,9 +60,9 @@ void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
 }
 
 
-bool find_and_delete(uintptr_t *ptr, uint16_t indice) {
+bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 
-    uintptr_t *suiv, *cour = TZL[indice];
+    uintptr_t *suiv, *cour = TZL[ordre];
 
     /* Le bloc est en tête de liste */
     if ((uintptr_t *)(*cour) == ptr) {
@@ -84,7 +84,7 @@ bool find_and_delete(uintptr_t *ptr, uint16_t indice) {
 
 static int divide_block (uint16_t order)
 {
-    if (order >= 20) {
+    if (order > 20) {
 	fprintf(stderr, "error: Not enough space! \n");
 	return -1;
     }
@@ -92,8 +92,8 @@ static int divide_block (uint16_t order)
     if (TZL[order] == NULL)
         divide_block(order + 1);
 
-    insert_bloc_head((uintptr_t *)*TZL[order], order - 1);
-    insert_bloc_head((uintptr_t *)(*TZL[order] + (1 << (order-1))), order - 1);
+    insert_bloc_head((uintptr_t *)TZL[order], order - 1);
+    insert_bloc_head((uintptr_t *)(TZL[order] + (1 << (order-1))), order - 1);
     find_and_delete(TZL[order], order);
 
     return 0;
@@ -121,6 +121,7 @@ int mem_init() {
 }
 
 void *mem_alloc(unsigned long size) {
+
     if (!mem_initialized) {
 	fprintf (stderr,
 		 "error: Memory has not been initialized!\n");
@@ -138,6 +139,8 @@ void *mem_alloc(unsigned long size) {
     /* Regarde si TZL[log2(size - 1) + 1] comprend un bloc libre  */
     /* Si oui, retire de la tzl et retourne l'@ associée */
     uint16_t order = get_pow_sup(size);
+    fprintf (stderr,
+	     "mem_alloc of size %ld, order %d\n", size, order);
 
     if (!TZL[order]) {
 	if (divide_block (order))
