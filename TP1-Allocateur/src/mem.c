@@ -15,6 +15,7 @@
 /** squelette du TP allocateur memoire */
 
 void *zone_memoire = 0;
+bool mem_initialized = false;
 
 /* TZL sous forme de tableau de tableaux */
 uintptr_t *TZL[BUDDY_MAX_INDEX + 1] = {NULL};
@@ -110,13 +111,22 @@ int mem_init() {
     /* On entre l'adresse dans la zone_memoire */
     /* TZL vide sauf deniere case, bloc memoire complet */
     TZL[BUDDY_MAX_INDEX] = (uintptr_t *)zone_memoire;
+    *TZL[BUDDY_MAX_INDEX] = 0;
 
-    printf ("mem @%p\n", zone_memoire);
+    mem_initialized = true;
+
+    fprintf (stderr, "mem @%p\n", zone_memoire);
 
     return 0;
 }
 
 void *mem_alloc(unsigned long size) {
+    if (!mem_initialized) {
+	fprintf (stderr,
+		 "error: Memory has not been initialized!\n");
+	return NULL;
+    }
+
      /* Check que size > 0 */
     if (size <= 0) {
 	fprintf (stderr,
@@ -166,7 +176,7 @@ int mem_free(void *ptr, unsigned long size) {
 
 int mem_destroy() {
     /* ecrire votre code ici */
-
+    mem_initialized = false;
 
     free(zone_memoire);
     zone_memoire = 0;
