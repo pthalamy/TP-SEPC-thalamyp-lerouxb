@@ -40,9 +40,11 @@ TEST(Variantes,buddy) {
   unsigned long v1 = (unsigned long)m1;
   unsigned long v2 = (unsigned long)m2;
   ASSERT_EQ( (v1-vref)^(v2-vref), 64 );
+  printf("Test taille __OK\n");
 
   ASSERT_EQ( mem_free( m1, 64 ), 0 );
   ASSERT_EQ( mem_free( m2, 64 ), 0 );
+  printf("FREE2&3__OK\n");
 
   mref = mem_alloc(ALLOC_MEM_SIZE);
   ASSERT_NE( mref, (void *)0 );
