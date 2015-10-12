@@ -169,7 +169,7 @@ void *mem_alloc(unsigned long size)
     }
 
     /* Check que size > 0 */
-    if (size <= 0) {
+    if (size <= sizeof(uintptr_t*) || size > ALLOC_MEM_SIZE) {
 	fprintf (stderr,
 		 "error: Allocation of size %ld forbidden!\n",
 		 size);

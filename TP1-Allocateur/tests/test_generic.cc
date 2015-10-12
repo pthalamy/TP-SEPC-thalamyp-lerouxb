@@ -31,7 +31,7 @@ TEST(Init, oneallocloop) {
     memset(m1, i, 64);
     ASSERT_EQ( mem_free(m1, 64), 0 );
     ASSERT_EQ( mem_destroy(), 0);
-  } 
+  }
 }
 
 class BaseMemTest : public ::testing::Test {
@@ -62,11 +62,10 @@ TEST_F(BaseMemTest, allocall) {
   ASSERT_EQ( mem_free(m3, ALLOC_MEM_SIZE), 0 );
 }
 
-TEST_F(BaseMemTest, boundaries) { 
+TEST_F(BaseMemTest, boundaries) {
   void * m1=  mem_alloc(ALLOC_MEM_SIZE);
   ASSERT_NE( m1, (void *)0 );
   ASSERT_EQ( mem_free(m1, ALLOC_MEM_SIZE), 0 );
-  
   ASSERT_NE( mem_free( (void *)-1, ALLOC_MEM_SIZE), 0 );
   void *m2= (void *) (((unsigned char *)m1)-1);
   ASSERT_NE( mem_free( m2, ALLOC_MEM_SIZE), 0 );
@@ -102,7 +101,7 @@ TEST_F(BaseMemTest, bouclefreepairimpair) {
   void *tab[nb];
 
   ASSERT_LT( 64*nb,  ALLOC_MEM_SIZE );
-  
+
   for(int i=0; i < nb; i++)
     {
       tab[i] = mem_alloc(64);
@@ -146,7 +145,7 @@ TEST_F(BaseMemTest, petitetaille) {
   void *m1 = mem_alloc(1);
   ASSERT_NE( m1, (void *)0 );
   memset( m1, 0, 1);
-  
+
   void *m2 = mem_alloc(1);
   ASSERT_NE( m2, (void *)0 );
   memset( m2, 0, 1 );
@@ -158,10 +157,10 @@ TEST_F(BaseMemTest, petitetaille) {
 
   ASSERT_EQ( mem_free( m1, 1 ), 0 );
   ASSERT_EQ( mem_free( m2, 1 ), 0 );
-  
+
 
   void * m3 = mem_alloc(ALLOC_MEM_SIZE);
-  ASSERT_NE( m3, (void *)0 ); 
+  ASSERT_NE( m3, (void *)0 );
   memset(m3, 4, ALLOC_MEM_SIZE);
   ASSERT_EQ( mem_free( m3, ALLOC_MEM_SIZE ), 0 );
 }
@@ -171,7 +170,7 @@ TEST_F(BaseMemTest, aleatoire) {
   ASSERT_NE( mref, (void *)0 );
   memset(mref, 4, ALLOC_MEM_SIZE);
   ASSERT_EQ( mem_free( mref, ALLOC_MEM_SIZE ), 0 );
-  
+
   for(int i=0; i< 10; i++)
     {
       random_run_cpp(100, false);
@@ -179,5 +178,5 @@ TEST_F(BaseMemTest, aleatoire) {
       ASSERT_NE( m1, (void *)0 );
       memset(m1, 4, ALLOC_MEM_SIZE);
       ASSERT_EQ( mem_free( m1, ALLOC_MEM_SIZE ), 0 );
-    } 
+    }
 }
