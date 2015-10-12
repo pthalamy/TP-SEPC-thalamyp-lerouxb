@@ -14,6 +14,8 @@
 
 #define ADD_SIZE sizeof(void *)
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
 /** squelette du TP allocateur memoire */
 
 void *zone_memoire = 0;
@@ -69,19 +71,19 @@ void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
 	TZL[indice] = ptr;
 	*TZL[indice] = (uintptr_t)temp;
     }
-#if DEBUG
+//#if DEBUG
     printf("Fin Insertion. TZL[%d] = ", indice);
     print_blocList(TZL[indice]);
-#endif
+//#endif
 
 }
 
 
 bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
-#if DEBUG
+//#if DEBUG
     printf("Try to find and delete %p in TZL[%d] = ", ptr, ordre);
     print_blocList(TZL[ordre]);
-#endif
+//#endif
 
     uintptr_t *suiv, *cour = TZL[ordre];
 
@@ -100,9 +102,9 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
     }
 
     else {
-	while ((*cour) != 0) {
+	while ((cour) != NULL) {
 	    suiv = (uintptr_t *)(*cour);
-	    if ((uintptr_t *)(*suiv) == ptr) {
+	    if ((uintptr_t *)(suiv) == ptr) {
 		cour = (uintptr_t *)(*suiv);
 #if DEBUG
 		printf("End delete. TZL[%d] = ", ordre);
@@ -113,6 +115,7 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 	    }
 	    cour = (uintptr_t *)(*suiv);
 	}
+
     }
 #if DEBUG
     printf("End delete. TZL[%d] = ", ordre);
@@ -208,13 +211,16 @@ int mem_free(void *ptr, unsigned long size) {
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
-#if DEBUG
+//#if DEBUG
 	printf ("buddy @%p of size %ld found!\n", (void*)buddy, size);
-#endif
-     	++indice;
+//#endif
+     	indice++;
     	if (indice == BUDDY_MAX_INDEX)
     	    break;
-	buddy = (uintptr_t)PTR ^ (1 << indice);
+	buddy = MIN((uintptr_t)PTR, (uintptr_t)buddy) ^ (1 << indice);
+//#if DEBUG
+	printf ("buddy @%p \n", (void*)buddy);
+//#endif
     }
 
     /* Puis on l'ajoute a la bonne place */
