@@ -34,7 +34,6 @@ static uint16_t get_pow_sup(unsigned long size) {
     return (uint16_t)i+1;
 }
 
-
 void print_blocList(uintptr_t *head)
 {
     uintptr_t *cour = head;
@@ -48,6 +47,13 @@ void print_blocList(uintptr_t *head)
     printf ("NULL\n");
 }
 
+void print_TZL(void)
+{
+    for (int16_t i = BUDDY_MAX_INDEX; i >= 0; i--) {
+	printf ("TZL[%d]: ", i);
+	print_blocList (TZL[i]);
+    }
+}
 
 void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
 #if DEBUG
@@ -194,9 +200,12 @@ void *mem_alloc(unsigned long size) {
     uintptr_t *freeBlock = TZL[order];
     find_and_delete (freeBlock, order);
 
-#if DEBUG
+/* #if DEBUG */
     printf("Block de 2^%d alloue a l'@ %p\n", order, freeBlock);
-#endif
+/* #endif */
+
+    print_TZL();
+
     return (void *)freeBlock;
 }
 
