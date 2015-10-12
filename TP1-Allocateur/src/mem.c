@@ -137,6 +137,8 @@ int mem_init() {
     TZL[BUDDY_MAX_INDEX] = (uintptr_t *)zone_memoire;
     *TZL[BUDDY_MAX_INDEX] = 0;
 
+    printf ("init mem @%p\n", zone_memoire);
+
     mem_initialized = true;
 
     return 0;
@@ -153,7 +155,7 @@ void *mem_alloc(unsigned long size) {
      /* Check que size > 0 */
     if (size <= 0) {
 	fprintf (stderr,
-		 "erreur: Allocation d'une zone de taille %ld interdite !\n",
+		 "error: Allocation of size %ld forbidden!\n",
 		 size);
 	return NULL;
     }
@@ -186,8 +188,7 @@ int mem_free(void *ptr, unsigned long size) {
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
-	fprintf (stderr,
-		 "buddy @%p of size %ld found!\n", (void*)buddy, size);
+	printf ("buddy @%p of size %ld found!\n", (void*)buddy, size);
 
 
      	++indice;
@@ -206,7 +207,7 @@ int mem_free(void *ptr, unsigned long size) {
 int mem_destroy() {
     /* ecrire votre code ici */
     mem_initialized = false;
-    fprintf (stderr, "destroy mem @%p\n", zone_memoire);
+    printf ("destroy mem @%p\n", zone_memoire);
 
     free(zone_memoire);
     zone_memoire = 0;
