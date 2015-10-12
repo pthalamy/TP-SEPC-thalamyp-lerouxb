@@ -36,7 +36,7 @@ void print_blocList(uintptr_t *head)
     uintptr_t *cour = head;
 
     if (head) {
-	while (*cour) {
+	while (cour) {
 	    printf ("%p -> ", cour);
 	    cour = (uintptr_t *)(*cour);
 	}
