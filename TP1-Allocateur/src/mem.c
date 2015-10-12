@@ -77,19 +77,19 @@ void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
 	TZL[indice] = ptr;
 	*TZL[indice] = (uintptr_t)temp;
     }
-//#if DEBUG
+#if DEBUG
     printf("Fin Insertion. TZL[%d] = ", indice);
     print_blocList(TZL[indice]);
-//#endif
+#endif
 
 }
 
 
 bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
-//#if DEBUG
+/* #if DEBUG */
     printf("Try to find and delete %p in TZL[%d] = ", ptr, ordre);
     print_blocList(TZL[ordre]);
-//#endif
+/* #endif */
 
     uintptr_t *suiv, *cour = TZL[ordre];
 
@@ -99,10 +99,10 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
     /* Le bloc est en tête de liste */
     if (cour == ptr) {
 	TZL[ordre] = (uintptr_t *)(*ptr);
-#if DEBUG
+/* #if DEBUG */
 	printf("End delete. TZL[%d] = ", ordre);
 	print_blocList(TZL[ordre]);
-#endif
+/* #endif */
 
 	return true;
     }
@@ -112,10 +112,10 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 	    suiv = (uintptr_t *)(*cour);
 	    if ((uintptr_t *)(suiv) == ptr) {
 		cour = (uintptr_t *)(*suiv);
-#if DEBUG
+/* #if DEBUG */
 		printf("End delete. TZL[%d] = ", ordre);
 		print_blocList(TZL[ordre]);
-#endif
+/* #endif */
 
 		return true;
 	    }
@@ -123,10 +123,10 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 	}
 
     }
-#if DEBUG
+/* #if DEBUG */
     printf("End delete. TZL[%d] = ", ordre);
     print_blocList(TZL[ordre]);
-#endif
+/* #endif */
     return false;
 }
 
@@ -142,9 +142,10 @@ static int divide_block (uint16_t order)
 
     insert_bloc_head((uintptr_t *)TZL[order], order - 1);
     insert_bloc_head((uintptr_t *)((uintptr_t)TZL[order] + (1 << (order-1))), order - 1);
-#if DEBUG
+/* #if DEBUG */
+    printf("TZL[%d] : ", order-1);
     print_blocList(TZL[order-1]);
-#endif
+/* #endif */
 
     find_and_delete(TZL[order], order);
 
@@ -220,16 +221,16 @@ int mem_free(void *ptr, unsigned long size) {
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
-//#if DEBUG
+#if DEBUG
 	printf ("buddy @%p of size %ld found!\n", (void*)buddy, size);
-//#endif
+#endif
      	indice++;
     	if (indice == BUDDY_MAX_INDEX)
     	    break;
 	buddy = MIN((uintptr_t)PTR, (uintptr_t)buddy) ^ (1 << indice);
-//#if DEBUG
+#if DEBUG
 	printf ("buddy @%p \n", (void*)buddy);
-//#endif
+#endif
     }
 
     /* Puis on l'ajoute a la bonne place */
