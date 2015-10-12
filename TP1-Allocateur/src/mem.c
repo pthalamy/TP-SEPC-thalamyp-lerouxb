@@ -53,37 +53,8 @@ void print_TZL(void)
 	printf ("TZL[%d]: ", i);
 	print_blocList (TZL[i]);
     }
+    printf("\n");
 }
-
-void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
-#if DEBUG
-    printf("Insertion de %p dans TZL[%d] = ", ptr, indice);
-    print_blocList(TZL[indice]);
-#endif
-
-    if (TZL[indice] == NULL) { // Il n'y a pas encore de blocs de cette taille
-#if DEBUG
-	printf("Liste vide\n");
-#endif
-	TZL[indice] = ptr;
-	*TZL[indice] = (uintptr_t)NULL;
-    }
-    // Sinon on ajoute en tete
-    else {
-#if DEBUG
-	printf("Liste non vide\n");
-#endif
-	uintptr_t *temp = TZL[indice];
-	TZL[indice] = ptr;
-	*TZL[indice] = (uintptr_t)temp;
-    }
-#if DEBUG
-    printf("Fin Insertion. TZL[%d] = ", indice);
-    print_blocList(TZL[indice]);
-#endif
-
-}
-
 
 bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 /* #if DEBUG */
@@ -99,18 +70,11 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
     /* Le bloc est en tête de liste */
     if (cour == ptr) {
 	TZL[ordre] = (uintptr_t *)(*ptr);
-/* #if DEBUG */
-	printf("End delete. TZL[%d] = ", ordre);
-	print_blocList(TZL[ordre]);
-/* #endif */
-
 	return true;
-    }
-
-    else {
-	while ((cour) != NULL) {
+    } else {
+	while ((*cour) != 0) {
 	    suiv = (uintptr_t *)(*cour);
-	    if ((uintptr_t *)(suiv) == ptr) {
+	    if (suiv == ptr) {
 		cour = (uintptr_t *)(*suiv);
 /* #if DEBUG */
 		printf("End delete. TZL[%d] = ", ordre);
@@ -119,15 +83,42 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 
 		return true;
 	    }
-	    cour = (uintptr_t *)(*suiv);
+	    cour = suiv;
 	}
 
     }
-/* #if DEBUG */
-    printf("End delete. TZL[%d] = ", ordre);
-    print_blocList(TZL[ordre]);
-/* #endif */
     return false;
+}
+
+void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
+#if DEBUG
+    printf("Insertion de %p dans TZL[%d] = ", ptr, indice);
+    print_blocList(TZL[indice]);
+#endif
+
+    if (TZL[indice] == NULL) { // Il n'y a pas encore de blocs de cette taille
+#if DEBUG
+	printf("Liste vide\n");
+#endif
+	TZL[indice] = ptr;
+	find_and_delete(ptr, indice + 1);
+	*TZL[indice] = (uintptr_t)NULL;
+    }
+    // Sinon on ajoute en tete
+    else {
+#if DEBUG
+	printf("Liste non vide\n");
+#endif
+	uintptr_t *temp = TZL[indice];
+	TZL[indice] = ptr;
+	find_and_delete(ptr, indice + 1);
+	*TZL[indice] = (uintptr_t)temp;
+    }
+#if DEBUG
+    printf("Fin Insertion. TZL[%d] = ", indice);
+    print_blocList(TZL[indice]);
+#endif
+
 }
 
 static int divide_block (uint16_t order)
@@ -140,14 +131,30 @@ static int divide_block (uint16_t order)
     if (TZL[order] == NULL)
         divide_block(order + 1);
 
-    insert_bloc_head((uintptr_t *)TZL[order], order - 1);
-    insert_bloc_head((uintptr_t *)((uintptr_t)TZL[order] + (1 << (order-1))), order - 1);
-/* #if DEBUG */
-    printf("TZL[%d] : ", order-1);
-    print_blocList(TZL[order-1]);
-/* #endif */
+#if DEBUG
+    printf ("before insert:\n");
+    print_TZL();
+#endif
 
-    find_and_delete(TZL[order], order);
+    uintptr_t *buddy = (uintptr_t *)((uintptr_t)TZL[order] + (1 << (order-1)));
+
+    insert_bloc_head(TZL[order], order - 1);
+
+#if DEBUG
+    printf ("after insert1:\n");
+    print_TZL();
+#endif
+
+    insert_bloc_head(buddy, order - 1);
+
+#if DEBUG
+    printf ("after insert2:\n");
+    print_TZL();
+#endif
+
+#if DEBUG
+    print_blocList(TZL[order-1]);
+#endif
 
     return 0;
 }
@@ -212,6 +219,9 @@ void *mem_alloc(unsigned long size) {
 
 int mem_free(void *ptr, unsigned long size) {
 
+    printf("Block de taille %ld supprimé a l'@ %p\n", size, ptr);
+
+
     uintptr_t *PTR = (uintptr_t *)ptr;
     uint16_t indice = get_pow_sup(size);
 
@@ -236,6 +246,8 @@ int mem_free(void *ptr, unsigned long size) {
     /* Puis on l'ajoute a la bonne place */
     insert_bloc_head(PTR, indice);
 
+    print_TZL();
+
     return 0;
 }
 
@@ -247,5 +259,6 @@ int mem_destroy() {
 
     free(zone_memoire);
     zone_memoire = 0;
+
     return 0;
 }
