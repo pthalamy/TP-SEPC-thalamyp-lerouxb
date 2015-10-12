@@ -1,3 +1,4 @@
+
 /*****************************************************
  * Copyright Grégory Mounié 2008-2013                *
  * This code is distributed under the GLPv3 licence. *
@@ -13,6 +14,11 @@
 #define DEBUG 0
 
 #define ADD_SIZE sizeof(void *)
+
+#define BUDDY_ADDR(addr, order) \
+    ( ( ((uintptr_t)(addr) - (uintptr_t)(zone_memoire)) \
+       ^ (1 << (order))) + (uintptr_t)zone_memoire )
+
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -57,10 +63,10 @@ void print_TZL(void)
 }
 
 bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
-//#if DEBUG
+#if DEBUG
     printf("Try to find and delete %p in TZL[%d] = ", ptr, ordre);
     print_blocList(TZL[ordre]);
-//#endif
+#endif
 
     uintptr_t *suiv, *cour = TZL[ordre];
 
@@ -91,7 +97,6 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 	    }
 	    cour = suiv;
 	}
-
     }
 
 #if DEBUG
@@ -147,7 +152,12 @@ static int divide_block (uint16_t order)
     print_TZL();
 #endif
 
-    uintptr_t *buddy = (uintptr_t *)((uintptr_t)TZL[order] + (1 << (order-1)));
+    /* printf ("TZL[order]: @%p\n", (void*)TZL[order]); */
+    uintptr_t *buddy = (uintptr_t *)BUDDY_ADDR(TZL[order], order - 1);
+    /* printf ("buddy: @%p\n", (void*)buddy); */
+    /* uintptr_t checkBuddy = (uintptr_t)BUDDY_ADDR(buddy, order); */
+    /* printf ("checkBuddy: @%p\n", (void*)checkBuddy); */
+    /* printf ("\n"); */
 
     insert_bloc_head(TZL[order], order - 1);
 
@@ -237,25 +247,29 @@ int mem_free(void *ptr, unsigned long size) {
     uint16_t indice = get_pow_sup(size);
 
     /* xor entre @ et 2^indice afin de trouver le buddy */
-    uintptr_t buddy = (uintptr_t)PTR ^ (1<<indice);
+    uintptr_t buddy = (uintptr_t)BUDDY_ADDR(PTR, indice);
+    printf ("buddy: @%p\n", (void*)buddy);
 
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
-//#if DEBUG
+#if DEBUG
 	printf ("buddy @%p of size %ld found!\n", (void*)buddy, size);
-//#endif
-     	indice++;
-    	if (indice == BUDDY_MAX_INDEX)
+#endif
+     	++indice;
+    	if (indice > BUDDY_MAX_INDEX)
     	    break;
-	buddy = MIN((uintptr_t)PTR, (uintptr_t)buddy) ^ (1 << indice);
-//#if DEBUG
-	printf ("buddy @%p \n", (void*)buddy);
-//#endif
+
+	PTR = (uintptr_t *)(MIN((uintptr_t)PTR, buddy));
+	buddy = (uintptr_t)BUDDY_ADDR(PTR, indice);
+	printf ("PTR: @%p\n", (void*)PTR);
+	printf ("buddy: @%p\n", (void*)buddy);
+
+	print_TZL();
     }
 
     /* Puis on l'ajoute a la bonne place */
-    insert_bloc_head(PTR, indice);
+    insert_bloc_head(PTR, --indice);
 
     print_TZL();
 
