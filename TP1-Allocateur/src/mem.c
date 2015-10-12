@@ -10,6 +10,8 @@
 #include <stdbool.h>
 #include "mem.h"
 
+#define DEBUG 0
+
 #define ADD_SIZE sizeof(void *)
 
 /** squelette du TP allocateur memoire */
@@ -46,33 +48,40 @@ void print_blocList(uintptr_t *head)
 
 
 void insert_bloc_head(uintptr_t *ptr, uint16_t indice) {
-
+#if DEBUG
     printf("Insertion de %p dans TZL[%d] = ", ptr, indice);
     print_blocList(TZL[indice]);
+#endif
 
     if (TZL[indice] == NULL) { // Il n'y a pas encore de blocs de cette taille
+#if DEBUG
 	printf("Liste vide\n");
+#endif
 	TZL[indice] = ptr;
 	*TZL[indice] = (uintptr_t)NULL;
     }
     // Sinon on ajoute en tete
     else {
+#if DEBUG
 	printf("Liste non vide\n");
+#endif
 	uintptr_t *temp = TZL[indice];
 	TZL[indice] = ptr;
 	*TZL[indice] = (uintptr_t)temp;
     }
-
+#if DEBUG
     printf("Fin Insertion. TZL[%d] = ", indice);
     print_blocList(TZL[indice]);
+#endif
 
 }
 
 
 bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
-
+#if DEBUG
     printf("Try to find and delete %p in TZL[%d] = ", ptr, ordre);
     print_blocList(TZL[ordre]);
+#endif
 
     uintptr_t *suiv, *cour = TZL[ordre];
 
@@ -82,8 +91,11 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
     /* Le bloc est en tête de liste */
     if (cour == ptr) {
 	TZL[ordre] = (uintptr_t *)(*ptr);
+#if DEBUG
 	printf("End delete. TZL[%d] = ", ordre);
 	print_blocList(TZL[ordre]);
+#endif
+
 	return true;
     }
 
@@ -92,15 +104,20 @@ bool find_and_delete(uintptr_t *ptr, uint16_t ordre) {
 	    suiv = (uintptr_t *)(*cour);
 	    if ((uintptr_t *)(*suiv) == ptr) {
 		cour = (uintptr_t *)(*suiv);
+#if DEBUG
 		printf("End delete. TZL[%d] = ", ordre);
 		print_blocList(TZL[ordre]);
+#endif
+
 		return true;
 	    }
 	    cour = (uintptr_t *)(*suiv);
 	}
     }
+#if DEBUG
     printf("End delete. TZL[%d] = ", ordre);
     print_blocList(TZL[ordre]);
+#endif
     return false;
 }
 
@@ -116,7 +133,9 @@ static int divide_block (uint16_t order)
 
     insert_bloc_head((uintptr_t *)TZL[order], order - 1);
     insert_bloc_head((uintptr_t *)((uintptr_t)TZL[order] + (1 << (order-1))), order - 1);
+#if DEBUG
     print_blocList(TZL[order-1]);
+#endif
 
     find_and_delete(TZL[order], order);
 
@@ -152,7 +171,7 @@ void *mem_alloc(unsigned long size) {
 	return NULL;
     }
 
-     /* Check que size > 0 */
+    /* Check que size > 0 */
     if (size <= 0) {
 	fprintf (stderr,
 		 "error: Allocation of size %ld forbidden!\n",
@@ -172,8 +191,9 @@ void *mem_alloc(unsigned long size) {
     uintptr_t *freeBlock = TZL[order];
     find_and_delete (freeBlock, order);
 
+#if DEBUG
     printf("Block de 2^%d alloue a l'@ %p\n", order, freeBlock);
-
+#endif
     return (void *)freeBlock;
 }
 
@@ -188,14 +208,14 @@ int mem_free(void *ptr, unsigned long size) {
     /* Si present dans TZL, fusion jusqu'ā ce que le bloc atteigne la taille MAX */
     /*                      ou qu'un buddy manque */
     while (find_and_delete((uintptr_t *)buddy, indice)) {
+#if DEBUG
 	printf ("buddy @%p of size %ld found!\n", (void*)buddy, size);
-
-
+#endif
      	++indice;
     	if (indice == BUDDY_MAX_INDEX)
     	    break;
 	buddy = (uintptr_t)PTR ^ (1 << indice);
-     }
+    }
 
     /* Puis on l'ajoute a la bonne place */
     insert_bloc_head(PTR, indice);
