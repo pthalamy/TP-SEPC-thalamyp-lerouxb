@@ -66,6 +66,7 @@ TEST_F(BaseMemTest, boundaries) {
   void * m1=  mem_alloc(ALLOC_MEM_SIZE);
   ASSERT_NE( m1, (void *)0 );
   ASSERT_EQ( mem_free(m1, ALLOC_MEM_SIZE), 0 );
+
   ASSERT_NE( mem_free( (void *)-1, ALLOC_MEM_SIZE), 0 );
   void *m2= (void *) (((unsigned char *)m1)-1);
   ASSERT_NE( mem_free( m2, ALLOC_MEM_SIZE), 0 );

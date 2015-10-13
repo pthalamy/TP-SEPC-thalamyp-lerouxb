@@ -195,8 +195,11 @@ void *mem_alloc(unsigned long size)
 
 int mem_free(void *ptr, unsigned long size)
 {
-    if ((uintptr_t)ptr < (uintptr_t)zone_memoire ||  (uintptr_t)ptr >= (uintptr_t)zone_memoire + ALLOC_MEM_SIZE)
+    if ((uintptr_t)ptr < (uintptr_t)zone_memoire
+	||  (uintptr_t)ptr >= (uintptr_t)zone_memoire + ALLOC_MEM_SIZE) {
+	fprintf(stderr, "error: Cannot free memory @%p, out of bounds\n", ptr);
 	return -1;
+    }
 
     if (size < sizeof(uintptr_t*))
 	size = sizeof(uintptr_t*);
