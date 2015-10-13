@@ -42,7 +42,7 @@ static uint16_t get_pow_sup(unsigned long size)
 }
 
 
-static void print_blocList(uintptr_t *head)
+void print_blocList(uintptr_t *head)
 {
     uintptr_t *cour = head;
 
@@ -56,7 +56,7 @@ static void print_blocList(uintptr_t *head)
 }
 
 
-static void print_TZL(void)
+void print_TZL(void)
 {
     for (int16_t i = BUDDY_MAX_INDEX; i >= 0; i--) {
 	printf ("TZL[%d]: ", i);
@@ -84,8 +84,7 @@ static bool find_and_delete(uintptr_t *ptr, uint16_t ordre)
 	    suiv = (uintptr_t *)(*cour);
 
 	    if (suiv == ptr) {
-		cour = (uintptr_t *)(*suiv);
-
+		*cour = *suiv;
 		return true;
 	    }
 	    cour = suiv;
@@ -190,8 +189,6 @@ void *mem_alloc(unsigned long size)
     uintptr_t *freeBlock = TZL[order];
     find_and_delete (freeBlock, order);
 
-    print_TZL();
-
     return (void *)freeBlock;
 }
 
@@ -226,8 +223,6 @@ int mem_free(void *ptr, unsigned long size)
 
     /* Puis on l'ajoute a la bonne place */
     insert_bloc_head(PTR, indice);
-
-    print_TZL();
 
     return 0;
 }
