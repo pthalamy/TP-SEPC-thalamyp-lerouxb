@@ -13,9 +13,9 @@
 /*Macros*/
 #define ADD_SIZE sizeof(void *)
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define BUDDY_ADDR(addr, order) \
+#define BUDDY_ADDR(addr, order)				\
     ( ( ((uintptr_t)(addr) - (uintptr_t)(zone_memoire)) \
-       ^ (1 << (order))) + (uintptr_t)zone_memoire )
+	^ (1 << (order))) + (uintptr_t)zone_memoire )
 
 /**Definition des variables globales*/
 void *zone_memoire = 0;
@@ -123,7 +123,8 @@ static int divide_block (uint16_t order)
     }
 
     if (TZL[order] == NULL)
-        divide_block(order + 1);
+        if (divide_block(order + 1))
+	    return -1;
 
     uintptr_t *buddy = (uintptr_t *)BUDDY_ADDR(TZL[order], order-1);
 
@@ -161,20 +162,21 @@ int mem_init()
 
 void *mem_alloc(unsigned long size)
 {
-
     if (!mem_initialized) {
 	fprintf (stderr,
 		 "error: Memory has not been initialized!\n");
-	return NULL;
+	return (void*)0;
     }
 
     /* Check que size > 0 */
-    if (size <= sizeof(uintptr_t*) || size > ALLOC_MEM_SIZE) {
+    if (size > ALLOC_MEM_SIZE || size == 0) {
 	fprintf (stderr,
 		 "error: Allocation of size %ld forbidden!\n",
 		 size);
-	return NULL;
+	return (void*)0;
     }
+    else if (size < sizeof(uintptr_t*))
+	size = sizeof(uintptr_t*);
 
     /* Regarde si TZL[log2(size - 1) + 1] comprend un bloc libre  */
     /* Si oui, retire de la tzl et retourne l'@ associée */
@@ -188,12 +190,19 @@ void *mem_alloc(unsigned long size)
     uintptr_t *freeBlock = TZL[order];
     find_and_delete (freeBlock, order);
 
+
     return (void *)freeBlock;
 }
 
 
 int mem_free(void *ptr, unsigned long size)
 {
+    if ((uintptr_t)ptr < (uintptr_t)zone_memoire ||  (uintptr_t)ptr >= (uintptr_t)zone_memoire + ALLOC_MEM_SIZE)
+	return -1;
+
+    if (size < sizeof(uintptr_t*))
+	size = sizeof(uintptr_t*);
+
     uintptr_t *PTR = (uintptr_t *)ptr;
     uint16_t indice = get_pow_sup(size);
 
