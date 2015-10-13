@@ -42,28 +42,28 @@ static uint16_t get_pow_sup(unsigned long size)
 }
 
 
-/* static void print_blocList(uintptr_t *head) */
-/* { */
-/*     uintptr_t *cour = head; */
+static void print_blocList(uintptr_t *head)
+{
+    uintptr_t *cour = head;
 
-/*     if (head) { */
-/* 	while (cour) { */
-/* 	    printf ("%p -> ", cour); */
-/* 	    cour = (uintptr_t *)(*cour); */
-/* 	} */
-/*     } */
-/*     printf ("NULL\n"); */
-/* } */
+    if (head) {
+	while (cour) {
+	    printf ("%p -> ", cour);
+	    cour = (uintptr_t *)(*cour);
+	}
+    }
+    printf ("NULL\n");
+}
 
 
-/* static void print_TZL(void) */
-/* { */
-/*     for (int16_t i = BUDDY_MAX_INDEX; i >= 0; i--) { */
-/* 	printf ("TZL[%d]: ", i); */
-/* 	print_blocList (TZL[i]); */
-/*     } */
-/*     printf("\n"); */
-/* } */
+static void print_TZL(void)
+{
+    for (int16_t i = BUDDY_MAX_INDEX; i >= 0; i--) {
+	printf ("TZL[%d]: ", i);
+	print_blocList (TZL[i]);
+    }
+    printf("\n");
+}
 
 
 static bool find_and_delete(uintptr_t *ptr, uint16_t ordre)
@@ -190,6 +190,7 @@ void *mem_alloc(unsigned long size)
     uintptr_t *freeBlock = TZL[order];
     find_and_delete (freeBlock, order);
 
+    print_TZL();
 
     return (void *)freeBlock;
 }
@@ -225,6 +226,8 @@ int mem_free(void *ptr, unsigned long size)
 
     /* Puis on l'ajoute a la bonne place */
     insert_bloc_head(PTR, indice);
+
+    print_TZL();
 
     return 0;
 }
