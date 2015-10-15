@@ -5,8 +5,41 @@ endif(COMMAND cmake_policy)
 
 project(Ensishell)
 enable_testing()
+
+#######
+# Detect Guile en utilisant pkg-config
+# Si guile est desactivé dans ensishell.c vous pouvez commenter les lignes
+#####
+# Guile 2.0 by default
+
+execute_process(COMMAND pkg-config --cflags guile-2.0 OUTPUT_VARIABLE GUILE_PKG_CFLAGS)
+execute_process(COMMAND pkg-config --libs guile-2.0 OUTPUT_VARIABLE GUILE_PKG_LDFLAGS)
+
+# Guile 1.8 if guile 2.0 is not available
+if ("${GUILE_PKG_LDFLAGS}" STREQUAL "")
+  execute_process(COMMAND pkg-config --cflags guile-1.8 OUTPUT_VARIABLE GUILE_PKG_CFLAGS)
+  execute_process(COMMAND pkg-config --libs guile-1.8 OUTPUT_VARIABLE GUILE_PKG_LDFLAGS)
+endif()
+
+# aucun Guile n'a été trouvé
+if (NOT "${GUILE_PKG_LDFLAGS}" STREQUAL "")
+  set(USE_GUILE 1)
+  string(STRIP ${GUILE_PKG_CFLAGS} GUILE_CFLAGS)
+  string(STRIP ${GUILE_PKG_LDFLAGS} GUILE_LDFLAGS)
+
+  # Ensimag debug: if libltld.so is required but not there, put explicit path
+  find_library(LIBLTDL ltdl)
+  if (${GUILE_LDFLAGS} MATCHES "-lltdl" AND NOT ${LIBLTDL})
+    string(REPLACE "-lltdl" "/usr/lib64/libltdl.so.7" GUILE_LDFLAGS ${GUILE_LDFLAGS})
+  endif()
+else()
+  set(USE_GUILE 0)
+endif()
+
+# Debug build
+
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -Werror -std=gnu99")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${GUILE_CFLAGS} -Wall -Werror -std=gnu99")
 
 #########
 # Gestion des variantes
@@ -14,8 +47,8 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -Werror -std=gnu99")
 # Vous devez editer les lignes suivantes pour y mettre vos logins
 # et le numéro de la variante que vous avez choisi
 #########
-set(VARIANTE_LOGINS login1 login2 login3)
-set(VARIANTE_SUJET -1)
+set(VARIANTE_LOGINS lerouxb thalamyp)
+set(VARIANTE_SUJET 0)
 ###
 list(SORT VARIANTE_LOGINS)
 if (VARIANTE_LOGINS MATCHES "login[123]")
@@ -30,12 +63,6 @@ configure_file (
   ${CMAKE_SOURCE_DIR}/src/variante.h
 )
 
-#####
-# Détection de la bibliothèque Readline
-#####
-find_library(READLINE_LIBRARY NAMES readline libreadline history libhistory) 
-
-
 #########
 # Fin de gestion des variantes
 #########
@@ -45,7 +72,7 @@ find_library(READLINE_LIBRARY NAMES readline libreadline history libhistory)
 # shell il faut les ajouter ici
 ##
 add_executable(ensishell src/readcmd.c src/ensishell.c)
-target_link_libraries(ensishell readline history)
+target_link_libraries(ensishell readline history ${GUILE_LDFLAGS})
 
 ##
 # Programme de test
