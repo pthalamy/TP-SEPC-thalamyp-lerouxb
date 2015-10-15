@@ -21,3 +21,9 @@
 
 # ignore build directory
 build/
+
+# only include src directory
+/*
+!src/
+!CMakeLists.txt
+!.gitignore
