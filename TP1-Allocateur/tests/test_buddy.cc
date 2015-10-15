@@ -10,13 +10,13 @@
 
 TEST(Variantes,buddy) {
   int multi = 0;
-  
+
 #ifndef BUDDY
   return;
 #else
   multi = 1;
 #endif
-  
+
   ASSERT_EQ(multi, 1);
   ASSERT_EQ( mem_init(), 0 );
 
