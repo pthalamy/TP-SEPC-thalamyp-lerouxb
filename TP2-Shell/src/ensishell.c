@@ -21,6 +21,8 @@
  * lines in CMakeLists.txt.
  */
 
+void terminate(char *line);
+
 #if USE_GUILE == 1
 #include <libguile.h>
 
@@ -32,13 +34,37 @@ int executer(char *line)
      * pipe and i/o redirection are not required.
      */
 
+    /* printf("line: %s\n", line); */
+
     /* Parse line */
     struct cmdline *cl = parsecmd(&line);
 
-    /* Check returned fields */
-    if (cl->err) {
-	fprintf(stderr, "error: %s\n", cl->err);
+    /* If input stream closed, normal termination */
+    if (!cl) {
+
+	terminate(0);
     }
+
+    if (cl->err) {
+	/* Syntax error, read another command */
+	printf("error: %s\n", cl->err);
+	return -1;
+    }
+
+    if (cl->in) printf("in: %s\n", cl->in);
+    if (cl->out) printf("out: %s\n", cl->out);
+    if (cl->bg) printf("background (&)\n");
+
+    /* Display each command of the pipe */
+    for (int i = 0; cl->seq[i] != 0; i++) {
+	char **cmd = cl->seq[i];
+	printf("seq[%d]: ", i);
+	for (int j = 0; cmd[j] != 0; j++) {
+	    printf("'%s' ", cmd[j]);
+	}
+	printf("\n");
+    }
+
 
     /* Execute command line */
     for (uint8_t i = 0; cl->seq[i] != NULL; i++) {
@@ -53,18 +79,19 @@ int executer(char *line)
 	{
 	    /* Process is child process */
 	    const char *process = cl->seq[i][0];
-	    char *const *args = cl->seq[i] + sizeof(char *);
+	    char *const *args = cl->seq[i];
 	    execvp(process, args);
 	    break;
 	}
 	default:
 	    /* Process is father and PID = its child's PID */
 	    printf("child PID: %d\n", PID);
+	    /* waitpid(PID); */
 	    break;
 	}
     }
 
-    printf("Not implemented: can not execute %s\n", line);
+    /* printf("Not implemented: can not execute %s\n", line); */
 
     return 0;
 }
@@ -98,9 +125,9 @@ int main() {
 #endif
 
     while (1) {
-	struct cmdline *l;
+	/* struct cmdline *l; */
 	char *line=0;
-	int i, j;
+	/* int i, j; */
 	char *prompt = "ensishell>";
 
 	/* Readline use some internal memory structure that
@@ -127,36 +154,7 @@ int main() {
 	}
 #endif
 
-	/* parsecmd free line and set it up to 0 */
-	l = parsecmd( & line);
-
-	/* If input stream closed, normal termination */
-	if (!l) {
-
-	    terminate(0);
-	}
-
-
-
-	if (l->err) {
-	    /* Syntax error, read another command */
-	    printf("error: %s\n", l->err);
-	    continue;
-	}
-
-	if (l->in) printf("in: %s\n", l->in);
-	if (l->out) printf("out: %s\n", l->out);
-	if (l->bg) printf("background (&)\n");
-
-	/* Display each command of the pipe */
-	for (i=0; l->seq[i]!=0; i++) {
-	    char **cmd = l->seq[i];
-	    printf("seq[%d]: ", i);
-	    for (j=0; cmd[j]!=0; j++) {
-		printf("'%s' ", cmd[j]);
-	    }
-	    printf("\n");
-	}
+	executer(line);
     }
 
 }
