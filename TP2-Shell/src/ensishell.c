@@ -22,6 +22,9 @@
  * lines in CMakeLists.txt.
  */
 
+#define DEBUG_COMMAND_LINE 0
+#define DEBUG_PID 0
+
 void terminate(char *line);
 
 #if USE_GUILE == 1
@@ -42,7 +45,6 @@ int executer(char *line)
 
     /* If input stream closed, normal termination */
     if (!cl) {
-
 	terminate(0);
     }
 
@@ -52,20 +54,21 @@ int executer(char *line)
 	return -1;
     }
 
+#if DEBUG_COMMAND_LINE
     if (cl->in) printf("in: %s\n", cl->in);
     if (cl->out) printf("out: %s\n", cl->out);
     if (cl->bg) printf("background (&)\n");
 
     /* Display each command of the pipe */
     for (int i = 0; cl->seq[i] != 0; i++) {
-	char **cmd = cl->seq[i];
-	printf("seq[%d]: ", i);
-	for (int j = 0; cmd[j] != 0; j++) {
-	    printf("'%s' ", cmd[j]);
-	}
-	printf("\n");
+    	char **cmd = cl->seq[i];
+    	printf("seq[%d]: ", i);
+    	for (int j = 0; cmd[j] != 0; j++) {
+    	    printf("'%s' ", cmd[j]);
+    	}
+    	printf("\n");
     }
-
+#endif
 
     /* Execute command line */
     for (uint8_t i = 0; cl->seq[i] != NULL; i++) {
@@ -86,8 +89,14 @@ int executer(char *line)
 	}
 	default:
 	    /* Process is father and PID = its child's PID */
+#if DEBUG_PID
 	    printf("child PID: %d\n", PID);
-	    waitpid(PID, NULL, 0);
+#endif
+	    if (cl->bg)
+		printf("+ PID: %d\n", PID);
+	    else
+		waitpid(PID, NULL, 0);
+
 	    break;
 	}
     }
