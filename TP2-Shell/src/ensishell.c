@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -86,7 +87,7 @@ int executer(char *line)
 	default:
 	    /* Process is father and PID = its child's PID */
 	    printf("child PID: %d\n", PID);
-	    /* waitpid(PID); */
+	    waitpid(PID, NULL, 0);
 	    break;
 	}
     }
