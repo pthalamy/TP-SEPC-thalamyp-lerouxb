@@ -32,24 +32,39 @@ int executer(char *line)
      * pipe and i/o redirection are not required.
      */
 
-    pid_t PID;
-    switch (PID = fork()) {
-    case -1:
-	perror("fork:");
-	break;
-    case 0:
-	printf("Ahhhh !");
-	break;
-    default:
-	printf("%d, je suis ton pere\n", PID);
-	break;
+    /* Parse line */
+    struct cmdline *cl = parsecmd(&line);
+
+    /* Check returned fields */
+    if (cl->err) {
+	fprintf(stderr, "error: %s\n", cl->err);
     }
 
+    /* Execute command line */
+    for (uint8_t i = 0; cl->seq[i] != NULL; i++) {
+	/* Execute each command from command line */
+	pid_t PID;
+	switch (PID = fork()) {
+	case -1:
+	    /* there was an error during child creation */
+	    perror("fork:");
+	    break;
+	case 0:
+	{
+	    /* Process is child process */
+	    const char *process = cl->seq[i][0];
+	    char *const *args = cl->seq[i] + sizeof(char *);
+	    execvp(process, args);
+	    break;
+	}
+	default:
+	    /* Process is father and PID = its child's PID */
+	    printf("child PID: %d\n", PID);
+	    break;
+	}
+    }
 
     printf("Not implemented: can not execute %s\n", line);
-
-    /* Remove this line when using parsecmd as it will free it */
-    free(line);
 
     return 0;
 }
