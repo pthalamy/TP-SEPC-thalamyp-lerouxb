@@ -27,3 +27,4 @@ build/
 !src/
 !CMakeLists.txt
 !.gitignore
+*/*#*
