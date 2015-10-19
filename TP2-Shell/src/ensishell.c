@@ -77,11 +77,15 @@ int executer(char *line)
 
 	/* If command is "jobs" print PID */
 	if (!strncmp(cl->seq[i][0], "jobs", 4)) {
-	    printf("Active background process :\n");
-	    int j = 0;
-	    while (BACKGROUND_PID[j] > 0 && j < 20) {
-		printf("+ PID : %d\n", BACKGROUND_PID[j]);
-		++j;
+	    if (BACKGROUND_PID[0] == 0)
+		printf("No background process\n");
+	    else {
+		printf("Active background process :\n");
+		int j = 0;
+		while (BACKGROUND_PID[j] > 0 && j < 20) {
+		    printf("+ PID : %d\n", BACKGROUND_PID[j]);
+		    ++j;
+		}
 	    }
 	}
 
