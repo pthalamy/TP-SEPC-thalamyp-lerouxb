@@ -27,6 +27,8 @@
 
 void terminate(char *line);
 
+int BACKGROUND_PID[20] = {0};
+
 #if USE_GUILE == 1
 #include <libguile.h>
 
@@ -72,32 +74,50 @@ int executer(char *line)
 
     /* Execute command line */
     for (uint8_t i = 0; cl->seq[i] != NULL; i++) {
-	/* Execute each command from command line */
-	pid_t PID;
-	switch (PID = fork()) {
-	case -1:
-	    /* there was an error during child creation */
-	    perror("fork:");
-	    break;
-	case 0:
-	{
-	    /* Process is child process */
-	    const char *process = cl->seq[i][0];
-	    char *const *args = cl->seq[i];
-	    execvp(process, args);
-	    break;
-	}
-	default:
-	    /* Process is father and PID = its child's PID */
-#if DEBUG_PID
-	    printf("child PID: %d\n", PID);
-#endif
-	    if (cl->bg)
-		printf("+ PID: %d\n", PID);
-	    else
-		waitpid(PID, NULL, 0);
 
-	    break;
+	/* If command is "jobs" print PID */
+	if (!strncmp(cl->seq[i][0], "jobs", 4)) {
+	    printf("Active background process :\n");
+	    int j = 0;
+	    while (BACKGROUND_PID[j] > 0 && j < 20) {
+		printf("+ PID : %d\n", BACKGROUND_PID[j]);
+		++j;
+	    }
+	}
+
+	else {
+	    /* Execute each command from command line */
+	    pid_t PID;
+	    switch (PID = fork()) {
+	    case -1:
+		/* there was an error during child creation */
+		perror("fork:");
+		break;
+	    case 0:
+	    {
+		/* Process is child process */
+		const char *process = cl->seq[i][0];
+		char *const *args = cl->seq[i];
+		execvp(process, args);
+		break;
+	    }
+	    default:
+		/* Process is father and PID = its child's PID */
+#if DEBUG_PID
+		printf("child PID: %d\n", PID);
+#endif
+		if (cl->bg) {
+		    printf("+ PID: %d\n", PID);
+		    int j = 0;
+		    while (BACKGROUND_PID[j] != 0 && j < 20)
+			++j;
+		    BACKGROUND_PID[j] = PID;
+		}
+		else
+		    waitpid(PID, NULL, 0);
+
+		break;
+	    }
 	}
     }
 
