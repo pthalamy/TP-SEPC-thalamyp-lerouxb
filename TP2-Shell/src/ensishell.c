@@ -54,7 +54,8 @@ int executer(char *line)
 	/* Syntax error, read another command */
 	printf("error: %s\n", cl->err);
 	return -1;
-    }
+    } else if (!cl->seq[0])	/* Empty line */
+	return 0;
 
 #if DEBUG_COMMAND_LINE
     if (cl->in) printf("in: %s\n", cl->in);
@@ -72,60 +73,82 @@ int executer(char *line)
     }
 #endif
 
-    /* Execute command line */
-    for (uint8_t i = 0; cl->seq[i] != NULL; i++) {
+    int fds[2];			/* A pipe file-descriptor */
+    pid_t PID;
 
-	/* If command is "jobs" print PID */
-	if (!strncmp(cl->seq[i][0], "jobs", 4)) {
-	    if (BACKGROUND_PID[0] == 0)
-		printf("No background process\n");
-	    else {
-		printf("Active background process :\n");
-		int j = 0;
-		while (BACKGROUND_PID[j] > 0 && j < 20) {
-		    printf("+ PID : %d\n", BACKGROUND_PID[j]);
-		    ++j;
-		}
+    /* If first command is "jobs" print PID */
+    if (!strncmp(cl->seq[0][0], "jobs", 4)) {
+	if (BACKGROUND_PID[0] == 0)
+	    printf("No background processes\n");
+	else {
+	    printf("Active background processes:\n");
+	    int j = 0;
+	    while (BACKGROUND_PID[j] > 0 && j < 20) {
+		printf("+ [%d] PID : %d\n", j, BACKGROUND_PID[j]);
+		++j;
 	    }
 	}
+    } else if (cl->seq[1]) {    /* Execute command line, command has pipe*/
+	if (cl->seq[2])
+	    fprintf(stderr,
+		    "error: execution of commands with multiple pipes "
+		    "not implemented\n");
 
-	else {
-	    /* Execute each command from command line */
-	    pid_t PID;
-	    switch (PID = fork()) {
-	    case -1:
-		/* there was an error during child creation */
-		perror("fork:");
-		break;
-	    case 0:
-	    {
-		/* Process is child process */
-		const char *process = cl->seq[i][0];
-		char *const *args = cl->seq[i];
-		execvp(process, args);
-		break;
-	    }
-	    default:
-		/* Process is father and PID = its child's PID */
-#if DEBUG_PID
-		printf("child PID: %d\n", PID);
-#endif
-		if (cl->bg) {
-		    printf("+ PID: %d\n", PID);
-		    int j = 0;
-		    while (BACKGROUND_PID[j] != 0 && j < 20)
-			++j;
-		    BACKGROUND_PID[j] = PID;
-		}
-		else
-		    waitpid(PID, NULL, 0);
+	pipe(fds);
 
-		break;
+	/* Execute each command from command line */
+	switch (PID = fork()) {
+	case -1:
+	    /* there was an error during child creation */
+	    perror("fork:");
+	    break;
+	case 0:
+	{
+	    /* Process is child process, READING pipe end */
+	    if (cl->seq[1]) {		/* Pipe command */
+		dup2(fds[0], 0);
+		close(fds[1]); close(fds[0]);
+
+		execvp(cl->seq[1][0], cl->seq[1]);
 	    }
+	}
+	default:
+	    break;
 	}
     }
 
-    /* printf("Not implemented: can not execute %s\n", line); */
+    switch (PID = fork()) {
+    case -1:
+	/* there was an error during child creation */
+	perror("fork:");
+	break;
+    case 0:
+    {
+	/* Process is child process, WRITING pipe end */
+	if (cl->seq[1]) {
+	    dup2(fds[1], 1);
+	    close(fds[0]); close(fds[1]);
+	}
+
+	execvp(cl->seq[0][0], cl->seq[0]);
+    }
+    default:
+	/* Process is father and PID = its child's PID */
+#if DEBUG_PID
+	printf("child PID: %d\n", PID);
+#endif
+	if (cl->bg) {
+	    printf("+ PID: %d\n", PID);
+	    int j = 0;
+	    while (BACKGROUND_PID[j] != 0 && j < 20)
+		++j;
+	    BACKGROUND_PID[j] = PID;
+	}
+	else
+	    waitpid(PID, NULL, 0);
+
+	break;
+    }
 
     return 0;
 }
