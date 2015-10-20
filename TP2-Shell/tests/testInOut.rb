@@ -61,7 +61,7 @@ class Test2InOut < Test::Unit::TestCase
       @pty_write.puts("time -p sleep 3 | echo toto")
       a = @pty_read.expect(/^toto\r\n/, DELAI)
       assert_not_nil(a, "le | ne semble pas parallèle")
-    end 
+    end
 
 
 end

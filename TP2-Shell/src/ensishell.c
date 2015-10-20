@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -28,6 +29,8 @@
 void terminate(char *line);
 
 int BACKGROUND_PID[20] = {0};
+char BACKGROUND_PNAME[20][256];
+int BACKGROUND_NUM = 0;
 
 #if USE_GUILE == 1
 #include <libguile.h>
@@ -39,116 +42,6 @@ int executer(char *line)
      * parsecmd, then fork+execvp, for a single command.
      * pipe and i/o redirection are not required.
      */
-
-    /* printf("line: %s\n", line); */
-
-    /* Parse line */
-    struct cmdline *cl = parsecmd(&line);
-
-    /* If input stream closed, normal termination */
-    if (!cl) {
-	terminate(0);
-    }
-
-    if (cl->err) {
-	/* Syntax error, read another command */
-	printf("error: %s\n", cl->err);
-	return -1;
-    } else if (!cl->seq[0])	/* Empty line */
-	return 0;
-
-#if DEBUG_COMMAND_LINE
-    if (cl->in) printf("in: %s\n", cl->in);
-    if (cl->out) printf("out: %s\n", cl->out);
-    if (cl->bg) printf("background (&)\n");
-
-    /* Display each command of the pipe */
-    for (int i = 0; cl->seq[i] != 0; i++) {
-    	char **cmd = cl->seq[i];
-    	printf("seq[%d]: ", i);
-    	for (int j = 0; cmd[j] != 0; j++) {
-    	    printf("'%s' ", cmd[j]);
-    	}
-    	printf("\n");
-    }
-#endif
-
-    int fds[2];			/* A pipe file-descriptor */
-    pid_t PID;
-
-    /* If first command is "jobs" print PID */
-    if (!strncmp(cl->seq[0][0], "jobs", 4)) {
-	if (BACKGROUND_PID[0] == 0)
-	    printf("No background processes\n");
-	else {
-	    printf("Active background processes:\n");
-	    int j = 0;
-	    while (BACKGROUND_PID[j] > 0 && j < 20) {
-		printf("+ [%d] PID : %d\n", j, BACKGROUND_PID[j]);
-		++j;
-	    }
-	}
-    } else if (cl->seq[1]) {    /* Execute command line, command has pipe*/
-	if (cl->seq[2])
-	    fprintf(stderr,
-		    "error: execution of commands with multiple pipes "
-		    "not implemented\n");
-
-	pipe(fds);
-
-	/* Execute each command from command line */
-	switch (PID = fork()) {
-	case -1:
-	    /* there was an error during child creation */
-	    perror("fork:");
-	    break;
-	case 0:
-	{
-	    /* Process is child process, READING pipe end */
-	    if (cl->seq[1]) {		/* Pipe command */
-		dup2(fds[0], 0);
-		close(fds[1]); close(fds[0]);
-
-		execvp(cl->seq[1][0], cl->seq[1]);
-	    }
-	}
-	default:
-	    break;
-	}
-    }
-
-    switch (PID = fork()) {
-    case -1:
-	/* there was an error during child creation */
-	perror("fork:");
-	break;
-    case 0:
-    {
-	/* Process is child process, WRITING pipe end */
-	if (cl->seq[1]) {
-	    dup2(fds[1], 1);
-	    close(fds[0]); close(fds[1]);
-	}
-
-	execvp(cl->seq[0][0], cl->seq[0]);
-    }
-    default:
-	/* Process is father and PID = its child's PID */
-#if DEBUG_PID
-	printf("child PID: %d\n", PID);
-#endif
-	if (cl->bg) {
-	    printf("+ PID: %d\n", PID);
-	    int j = 0;
-	    while (BACKGROUND_PID[j] != 0 && j < 20)
-		++j;
-	    BACKGROUND_PID[j] = PID;
-	}
-	else
-	    waitpid(PID, NULL, 0);
-
-	break;
-    }
 
     return 0;
 }
@@ -211,7 +104,139 @@ int main() {
 	}
 #endif
 
-	executer(line);
-    }
+	/* Parse line */
+	struct cmdline *cl = parsecmd(&line);
 
+	/* If input stream closed, normal termination */
+	if (!cl) {
+	    terminate(0);
+	}
+
+	if (cl->err) {
+	    /* Syntax error, read another command */
+	    printf("error: %s\n", cl->err);
+	    return -1;
+	} else if (!cl->seq[0])	/* Empty line */
+	    return 0;
+
+#if DEBUG_COMMAND_LINE
+	if (cl->in) printf("in: %s\n", cl->in);
+	if (cl->out) printf("out: %s\n", cl->out);
+	if (cl->bg) printf("background (&)\n");
+
+	/* Display each command of the pipe */
+	for (int i = 0; cl->seq[i] != 0; i++) {
+	    char **cmd = cl->seq[i];
+	    printf("seq[%d]: ", i);
+	    for (int j = 0; cmd[j] != 0; j++) {
+		printf("'%s' ", cmd[j]);
+	    }
+	    printf("\n");
+	}
+#endif
+
+	int fds[2];			/* A pipe file-descriptor */
+	pid_t PID;
+
+	int in = 0;		/* input file desc: stdin by default */
+	if (cl->in)
+	    in = open(cl->in, O_RDONLY);
+	int out = 1;		/* output file desc: stdout by default */
+	if (cl->out)
+	    out = open(cl->out, O_WRONLY | O_CREAT);
+
+	/* If first command is "jobs" print PID */
+	if (!strncmp(cl->seq[0][0], "jobs", 4)) {
+	    if (BACKGROUND_PID[0] == 0)
+		printf("No background processes\n");
+	    else {
+		printf("Active background processes:\n");
+		int j = 0;
+		while (BACKGROUND_PID[j] > 0 && j < 20) {
+		    printf("+ [%d] %s - PID: %d\n", j,
+			   BACKGROUND_PNAME[j],
+			   BACKGROUND_PID[j]);
+		    ++j;
+		}
+	    }
+	} else if (cl->seq[1]) {    /* Execute command line, command has pipe*/
+	    if (cl->seq[2])
+		fprintf(stderr,
+			"error: execution of commands with multiple pipes "
+			"not implemented\n");
+
+	    pipe(fds);
+
+	    /* Execute each command from command line */
+	    switch (PID = fork()) {
+	    case -1:
+		/* there was an error during child creation */
+		perror("fork:");
+		break;
+	    case 0:
+	    {
+		/* Process is child process, READING pipe end */
+		dup2(fds[0], 0);
+		close(fds[1]); close(fds[0]);
+
+		if (out != 1) {
+		    dup2(out, 1); 	/* Redirect output to out */
+		    close(out);
+		}
+
+		execvp(cl->seq[1][0], cl->seq[1]);
+	    }
+	    default:
+		break;
+	    }
+	}
+
+	switch (PID = fork()) {
+	case -1:
+	    /* there was an error during child creation */
+	    perror("fork:");
+	    break;
+	case 0:
+	{
+	    /* Process is child process, WRITING pipe end */
+	    if (cl->seq[1]) {
+		dup2(fds[1], 1);
+		close(fds[0]); close(fds[1]);
+	    } else if (out != 1) {
+		dup2(out, 1); 	/* Redirect output to out */
+		close(out);
+	    }
+
+	    if (in != 0) {
+		dup2(in, 0); 	/* Redirect input from in */
+		close(in);
+	    }
+
+	    execvp(cl->seq[0][0], cl->seq[0]);
+	}
+	default:
+	    /* Process is father and PID = its child's PID */
+#if DEBUG_PID
+	    printf("child PID: %d\n", PID);
+#endif
+
+	    if (cl->seq[1]) {
+		close(fds[1]); close(fds[0]);
+	    }
+
+	    if (cl->bg) {
+		printf("+ PID: %d\n", PID);
+		BACKGROUND_PID[BACKGROUND_NUM] = PID;
+		strncpy(BACKGROUND_PNAME[BACKGROUND_NUM],
+			cl->seq[0][0],
+			strlen(cl->seq[0][0]) + 1);
+		BACKGROUND_NUM++;
+	    }
+	    else
+		waitpid(PID, NULL, 0);
+
+	    break;
+	}
+
+    }
 }
