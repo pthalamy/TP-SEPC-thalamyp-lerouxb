@@ -28,12 +28,56 @@
 
 void terminate(char *line);
 
-int BACKGROUND_PID[20] = {0};
-char BACKGROUND_PNAME[20][256];
-int BACKGROUND_NUM = 0;
-
 #if USE_GUILE == 1
 #include <libguile.h>
+
+typedef struct shell_cmd{
+    char **command;
+    pid_t PID;
+    struct shell_cmd *next;
+} shell_cmd;
+
+typedef struct shell_history {
+    shell_cmd *head;
+} shell_history;
+
+shell_history BACKGROUND_PID = {NULL};
+/* void init_shell_history() { */
+/*     BACKGROUND_PID = malloc(sizeof(shell_history)); */
+/*     BACKGROUND_PID->head = NULL; */
+/* } */
+
+void insert_shell_cmd(shell_history *liste, shell_cmd *command) {
+
+    if (liste->head == NULL) {
+	liste->head = command;
+	liste->head->next = NULL;
+    }
+
+    else {
+	shell_cmd *temp;
+	temp = liste->head;
+	liste->head = command;
+	command->next = temp;
+    }
+
+}
+
+void remove_shell_cmd(shell_history *liste, shell_cmd *command){
+    shell_cmd *cour, *suiv = liste->head;
+
+    if (liste || command)
+	return;
+    else if (liste->head == command)
+	liste->head = liste->head->next;
+
+    while (!cour) {
+	suiv = cour->next;
+	if (suiv == command)
+	    cour->next = suiv->next;
+	cour = suiv;
+    }
+}
 
 int executer(char *line)
 {
@@ -67,6 +111,8 @@ void terminate(char *line) {
 
 int main() {
     printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
+
+//    init_shell_history();
 
 #ifdef USE_GUILE
     scm_init_guile();
@@ -147,16 +193,23 @@ int main() {
 
 	/* If first command is "jobs" print PID */
 	if (!strncmp(cl->seq[0][0], "jobs", 4)) {
-	    if (BACKGROUND_PID[0] == 0)
+	    if (BACKGROUND_PID.head == NULL)
 		printf("No background processes\n");
 	    else {
+		shell_cmd *cour = BACKGROUND_PID.head;
 		printf("Active background processes:\n");
-		int j = 0;
-		while (BACKGROUND_PID[j] > 0 && j < 20) {
-		    printf("+ [%d] %s - PID: %d\n", j,
-			   BACKGROUND_PNAME[j],
-			   BACKGROUND_PID[j]);
+		int j = 1;
+		while (cour != NULL) {
+		    printf("+ [%d] PID: %d ", j,
+			   cour->PID);
+		    int k = 0;
+		    /* while (cour->command[k] != NULL) { */
+			printf("%s ", cour->command[k]);
+		    /* 	++k; */
+		    /* } */
+		    printf("\n");
 		    ++j;
+		    cour = cour->next;
 		}
 	    }
 	} else if (cl->seq[1]) {    /* Execute command line, command has pipe*/
@@ -226,11 +279,20 @@ int main() {
 
 	    if (cl->bg) {
 		printf("+ PID: %d\n", PID);
-		BACKGROUND_PID[BACKGROUND_NUM] = PID;
-		strncpy(BACKGROUND_PNAME[BACKGROUND_NUM],
-			cl->seq[0][0],
-			strlen(cl->seq[0][0]) + 1);
-		BACKGROUND_NUM++;
+
+		shell_cmd *new = malloc(sizeof(shell_cmd));
+		new->command = malloc(sizeof(char *));
+		new->next = malloc(sizeof(shell_cmd));
+		new->PID = PID;
+
+		int k = 0;
+
+		while (cl->seq[0][k] != NULL) {
+		    strcpy(new->command[k], cl->seq[0][k]);
+		    ++k;
+		}
+
+		insert_shell_cmd(&BACKGROUND_PID, new);
 	    }
 	    else
 		waitpid(PID, NULL, 0);
