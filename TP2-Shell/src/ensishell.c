@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -42,13 +43,10 @@ typedef struct shell_history {
 } shell_history;
 
 shell_history BACKGROUND_PID = {NULL};
-/* void init_shell_history() { */
-/*     BACKGROUND_PID = malloc(sizeof(shell_history)); */
-/*     BACKGROUND_PID->head = NULL; */
-/* } */
 
 int parse_and_execute_line(char **line);
 
+/* Insert a background process into shell_history*/
 void insert_shell_cmd(shell_history *liste, shell_cmd *command) {
 
     if (liste->head == NULL) {
@@ -62,22 +60,46 @@ void insert_shell_cmd(shell_history *liste, shell_cmd *command) {
 	liste->head = command;
 	command->next = temp;
     }
-
 }
 
-void remove_shell_cmd(shell_history *liste, shell_cmd *command){
-    shell_cmd *cour, *suiv = liste->head;
+void print_shell_history() {
+    shell_cmd *cour = (shell_cmd *)BACKGROUND_PID.head;
+    while (cour != NULL) {
+	printf("[PID: %i]->", cour->PID);
+	cour = cour->next;
+    }
+    printf("NULL\n");
+}
 
-    if (liste || command)
+/* Delete all process terminated*/
+void update_shell_history(shell_history *liste){
+
+    if (liste->head == NULL)
 	return;
-    else if (liste->head == command)
+
+    int status;
+    int pid_return;
+
+    while (waitpid(liste->head->PID, &status, WNOHANG) != 0)
 	liste->head = liste->head->next;
 
-    while (!cour) {
-	suiv = cour->next;
-	if (suiv == command)
-	    cour->next = suiv->next;
-	cour = suiv;
+    shell_cmd *cour = liste->head, *suiv = liste->head;
+
+    if (cour != NULL) {
+	while (suiv != NULL) {
+	    suiv = cour->next;
+	    if (suiv != NULL)
+	        pid_return = waitpid(suiv->PID, &status, WNOHANG);
+	    else
+		pid_return = 0;
+
+	    if (pid_return != 0) {
+		cour->next = suiv->next;
+		cour = suiv->next;
+	    }
+	    else
+		cour = suiv;
+	}
     }
 }
 
@@ -156,6 +178,9 @@ int parse_and_execute_line(char **line)
 
     /* If first command is "jobs" print PID */
     if (!strncmp(cl->seq[0][0], "jobs", 4)) {
+
+	update_shell_history(&BACKGROUND_PID);
+
 	if (BACKGROUND_PID.head == NULL)
 	    printf("No background processes\n");
 	else {
@@ -165,9 +190,9 @@ int parse_and_execute_line(char **line)
 	    while (cour != NULL) {
 		printf("+ [%d] PID: %d ", j,
 		       cour->PID);
-		int k = 0;
+		/* int k = 0; */
 		/* while (cour->command[k] != NULL) { */
-		printf("%s ", cour->command[k]);
+		/* printf("%s ", cour->command[k]); */
 		/* 	++k; */
 		/* } */
 		printf("\n");
@@ -248,12 +273,14 @@ int parse_and_execute_line(char **line)
 	    new->next = malloc(sizeof(shell_cmd));
 	    new->PID = PID;
 
-	    int k = 0;
+	    /* int k = 0; */
 
-	    while (cl->seq[0][k] != NULL) {
-		strcpy(new->command[k], cl->seq[0][k]);
-		++k;
-	    }
+	    /* while (cl->seq[0][k] != NULL) { */
+	    /* 	strcpy(new->command[k], cl->seq[0][k]); */
+	    /* 	++k; */
+	    /* } */
+
+	    /* printf("Init OK\n"); */
 
 	    insert_shell_cmd(&BACKGROUND_PID, new);
 	}
@@ -269,8 +296,6 @@ int parse_and_execute_line(char **line)
 
 int main() {
     printf("Variante %d: %s\n", VARIANTE, VARIANTE_STRING);
-
-//    init_shell_history();
 
 #ifdef USE_GUILE
     scm_init_guile();
