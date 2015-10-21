@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdbool.h>
+#include <wordexp.h>
 
 #include "variante.h"
 #include "readcmd.h"
@@ -132,6 +133,19 @@ void terminate(char *line) {
     exit(0);
 }
 
+int array_length(uintptr_t *arr)
+{
+    if (!arr)
+	return 0;
+
+    int count = 0;
+    int i = 0;
+
+    while (arr[i++])
+	count++;
+
+    return count;
+}
 
 int parse_and_execute_line(char **line)
 {
@@ -251,6 +265,12 @@ int parse_and_execute_line(char **line)
 	if (in != 0) {
 	    dup2(in, 0); 	/* Redirect input from in */
 	    close(in);
+	}
+
+	wordexp_t p;
+	if (cl->seq[0][1]) {
+	    wordexp(cl->seq[0][1], &p, 0);
+	    cl->seq[0][1] = p.we_wordv[0];
 	}
 
 	execvp(cl->seq[0][0], cl->seq[0]);
