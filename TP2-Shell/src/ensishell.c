@@ -27,6 +27,7 @@
 
 #define DEBUG_COMMAND_LINE 0
 #define DEBUG_PID 0
+#define DEBUG_JOBS 0
 
 void terminate(char *line);
 
@@ -75,33 +76,42 @@ void print_shell_history() {
 /* Delete all process terminated*/
 void update_shell_history(shell_history *liste){
 
-    if (liste->head == NULL)
-	return;
+#if DEBUG_JOBS
+    printf("-->Updating Shell_history...\n");
+#endif
+    shell_cmd *sentinelle = malloc(sizeof(shell_cmd));
+    insert_shell_cmd(&BACKGROUND_PID, sentinelle);
 
     int status;
     int pid_return;
 
-    while (waitpid(liste->head->PID, &status, WNOHANG) != 0)
-	liste->head = liste->head->next;
+    shell_cmd *cour = liste->head, *suiv;
 
-    shell_cmd *cour = liste->head, *suiv = liste->head;
+    while (cour != NULL) {
+	suiv = cour->next;
+	if (suiv != NULL) {
 
-    if (cour != NULL) {
-	while (suiv != NULL) {
-	    suiv = cour->next;
-	    if (suiv != NULL)
-	        pid_return = waitpid(suiv->PID, &status, WNOHANG);
-	    else
-		pid_return = 0;
+	    pid_return = waitpid(suiv->PID, &status, WNOHANG);
+#if DEBUG_JOBS
+	    printf("WAITPID RETURN : %d\n", pid_return);
+#endif
 
-	    if (pid_return != 0) {
+	    if (pid_return == suiv->PID) {
 		cour->next = suiv->next;
 		cour = suiv->next;
 	    }
 	    else
 		cour = suiv;
 	}
+	else
+	    cour = suiv;
     }
+
+    liste->head = liste->head->next;
+
+#if DEBUG_JOBS
+    printf("-->Update terminated...\n");
+#endif
 }
 
 int executer(char *line)
@@ -193,27 +203,33 @@ int parse_and_execute_line(char **line)
     /* If first command is "jobs" print PID */
     if (!strncmp(cl->seq[0][0], "jobs", 4)) {
 
+#if DEBUG_JOBS
+	printf("Shell_History : ");
+	print_shell_history();
+#endif
 	update_shell_history(&BACKGROUND_PID);
+
+#if DEBUG_JOBS
+	printf("Shell_history updated : ");
+	print_shell_history();
+#endif
 
 	if (BACKGROUND_PID.head == NULL)
 	    printf("No background processes\n");
 	else {
-	    shell_cmd *cour = BACKGROUND_PID.head;
 	    printf("Active background processes:\n");
+	    shell_cmd *cour = BACKGROUND_PID.head;
 	    int j = 1;
 	    while (cour != NULL) {
 		printf("+ [%d] PID: %d ", j,
 		       cour->PID);
-		/* int k = 0; */
-		/* while (cour->command[k] != NULL) { */
-		/* printf("%s ", cour->command[k]); */
-		/* 	++k; */
-		/* } */
+		printf("%s ", cour->command[0]);
 		printf("\n");
 		++j;
 		cour = cour->next;
 	    }
 	}
+	return 0;
     } else if (cl->seq[1]) {    /* Execute command line, command has pipe*/
 	if (cl->seq[2])
 	    fprintf(stderr,
@@ -293,14 +309,7 @@ int parse_and_execute_line(char **line)
 	    new->next = malloc(sizeof(shell_cmd));
 	    new->PID = PID;
 
-	    /* int k = 0; */
-
-	    /* while (cl->seq[0][k] != NULL) { */
-	    /* 	strcpy(new->command[k], cl->seq[0][k]); */
-	    /* 	++k; */
-	    /* } */
-
-	    /* printf("Init OK\n"); */
+	    strcpy(new->command[0], cl->seq[0][0]);
 
 	    insert_shell_cmd(&BACKGROUND_PID, new);
 	}
