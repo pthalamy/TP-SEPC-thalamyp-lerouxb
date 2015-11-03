@@ -164,11 +164,71 @@ void perform_line_expansion(struct cmdline *cl, int num, wordexp_t *expanded)
     }
 }
 
+void execute_command(struct cmdline *cl, int n, int fdin, int fdout)
+{
+    wordexp_t expanded;
+    pid_t PID;
+
+    perform_line_expansion(cl, n, &expanded);
+
+    switch (PID = fork()) {
+    case -1:
+	/* there was an error during child creation */
+	perror("fork:");
+	break;
+    case 0:
+    {
+	if (fdin != 0) {
+	    dup2(fdin, 0);	/* Redirect input from in */
+	    close(fdin);
+	}
+
+	if (fdout != 1) {
+	    dup2(fdout, 1); 	/* Redirect output to out */
+	    close(fdout);
+	}
+
+	execvp(expanded.we_wordv[0], expanded.we_wordv);
+    }
+    default:
+	/* Process is father and PID = its child's PID */
+#if DEBUG_PID
+	printf("child PID: %d\n", PID);
+#endif
+
+	/* Free wordexp */
+	wordfree(&expanded);
+
+	if (fdin != 0) {
+	    close(fdin);
+	}
+
+	if (fdout != 1) {
+	    close(fdout);
+	}
+
+	if (cl->bg) {
+	    printf("+ PID: %d\n", PID);
+
+	    shell_cmd *new = malloc(sizeof(shell_cmd));
+	    new->command = malloc(sizeof(char *));
+	    new->next = malloc(sizeof(shell_cmd));
+	    new->PID = PID;
+
+	    strcpy(new->command[0], cl->seq[n][0]);
+
+	    insert_shell_cmd(&BACKGROUND_PID, new);
+	} else
+	    waitpid(PID, NULL, 0);
+
+	break;
+    }
+}
+
 int parse_and_execute_line(char **line)
 {
     /* Parse line */
     struct cmdline *cl = parsecmd(line);
-    wordexp_t expanded;
 
     /* If input stream closed, normal termination */
     if (!cl) {
@@ -197,9 +257,6 @@ int parse_and_execute_line(char **line)
 	printf("\n");
     }
 #endif
-
-    int fds[2];			/* A pipe file-descriptor */
-    pid_t PID;
 
     int in = 0;		/* input file desc: stdin by default */
     if (cl->in)
@@ -230,97 +287,19 @@ int parse_and_execute_line(char **line)
 	}
 
 	return 0;
+    } else {
+	int fds[2];			/* A pipe file-descriptor */
+	int prevFdin = in;
+	int fdout;
+	for (int i = 0; cl->seq[i]; i++) {
+	    pipe(fds);
 
-    } else if (cl->seq[1]) {    /* Execute command line, command has pipe*/
-	if (cl->seq[2])
-	    fprintf(stderr,
-		    "error: execution of commands with multiple pipes "
-		    "not implemented\n");
+	    fdout = (cl->seq[i + 1] == NULL) ? out : fds[1];
 
-	pipe(fds);
+	    execute_command(cl, i, prevFdin, fdout);
 
-	perform_line_expansion(cl, 1, &expanded);
-
-	/* Execute each command from command line */
-	switch (PID = fork()) {
-	case -1:
-	    /* there was an error during child creation */
-	    perror("fork:");
-	    break;
-	case 0:
-	{
-	    /* Process is child process, READING pipe end */
-	    dup2(fds[0], 0);
-	    close(fds[1]); close(fds[0]);
-
-	    if (out != 1) {
-		dup2(out, 1); 	/* Redirect output to out */
-		close(out);
-	    }
-
-	    execvp(expanded.we_wordv[0], expanded.we_wordv);
+	    prevFdin = fds[0];
 	}
-	default:
-	    /* Free wordexp */
-	    wordfree(&expanded);
-	    break;
-	}
-    }
-
-    perform_line_expansion(cl, 0, &expanded);
-
-    switch (PID = fork()) {
-    case -1:
-	/* there was an error during child creation */
-	perror("fork:");
-	break;
-    case 0:
-    {
-	/* Process is child process, WRITING pipe end */
-	if (cl->seq[1]) {
-	    dup2(fds[1], 1);
-	    close(fds[0]); close(fds[1]);
-	} else if (out != 1) {
-	    dup2(out, 1); 	/* Redirect output to out */
-	    close(out);
-	}
-
-	if (in != 0) {
-	    dup2(in, 0); 	/* Redirect input from in */
-	    close(in);
-	}
-
-	execvp(expanded.we_wordv[0], expanded.we_wordv);
-    }
-    default:
-	/* Process is father and PID = its child's PID */
-#if DEBUG_PID
-	printf("child PID: %d\n", PID);
-#endif
-
-	/* Free wordexp */
-	wordfree(&expanded);
-
-	if (cl->seq[1]) {
-	    close(fds[1]); close(fds[0]);
-	}
-
-	if (cl->bg) {
-	    printf("+ PID: %d\n", PID);
-
-	    shell_cmd *new = malloc(sizeof(shell_cmd));
-	    new->command = malloc(sizeof(char *));
-	    new->next = malloc(sizeof(shell_cmd));
-	    new->PID = PID;
-
-	    strcpy(new->command[0], cl->seq[0][0]);
-
-	    insert_shell_cmd(&BACKGROUND_PID, new);
-	}
-	else
-	    waitpid(PID, NULL, 0);
-
-	break;
     }
 
     return 0;
