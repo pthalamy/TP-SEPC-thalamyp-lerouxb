@@ -218,7 +218,7 @@ void execute_command(struct cmdline *cl, int n, int fdin, int fdout)
 	    strcpy(new->command[0], cl->seq[n][0]);
 
 	    insert_shell_cmd(&BACKGROUND_PID, new);
-	} else if (!cl[n + 1))
+	} else if (cl->seq[n + 1] == NULL)
 	    waitpid(PID, NULL, 0);
 
 	break;
