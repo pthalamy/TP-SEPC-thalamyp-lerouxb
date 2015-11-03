@@ -148,10 +148,27 @@ int array_length(uintptr_t *arr)
     return count;
 }
 
+/* Expands command number num of cl and stores result in expanded */
+void perform_line_expansion(struct cmdline *cl, int num, wordexp_t *expanded)
+{
+    /* Expand program name */
+    wordexp(cl->seq[num][0], expanded, 0);
+
+    /* Expand args  */
+    for (int i = 1; cl->seq[num][i]; i++) {
+	if (wordexp(cl->seq[num][i], expanded, WRDE_APPEND)) {
+	    wordfree(expanded);
+	    fprintf(stderr, "error: wildcard expansion failed\n");
+	    exit(1);
+	}
+    }
+}
+
 int parse_and_execute_line(char **line)
 {
     /* Parse line */
     struct cmdline *cl = parsecmd(line);
+    wordexp_t expanded;
 
     /* If input stream closed, normal termination */
     if (!cl) {
@@ -222,6 +239,8 @@ int parse_and_execute_line(char **line)
 
 	pipe(fds);
 
+	perform_line_expansion(cl, 1, &expanded);
+
 	/* Execute each command from command line */
 	switch (PID = fork()) {
 	case -1:
@@ -239,12 +258,16 @@ int parse_and_execute_line(char **line)
 		close(out);
 	    }
 
-	    execvp(cl->seq[1][0], cl->seq[1]);
+	    execvp(expanded.we_wordv[0], expanded.we_wordv);
 	}
 	default:
+	    /* Free wordexp */
+	    wordfree(&expanded);
 	    break;
 	}
     }
+
+    perform_line_expansion(cl, 0, &expanded);
 
     switch (PID = fork()) {
     case -1:
@@ -267,19 +290,16 @@ int parse_and_execute_line(char **line)
 	    close(in);
 	}
 
-	wordexp_t p;
-	if (cl->seq[0][1]) {
-	    wordexp(cl->seq[0][1], &p, 0);
-	    cl->seq[0][1] = p.we_wordv[0];
-	}
-
-	execvp(cl->seq[0][0], cl->seq[0]);
+	execvp(expanded.we_wordv[0], expanded.we_wordv);
     }
     default:
 	/* Process is father and PID = its child's PID */
 #if DEBUG_PID
 	printf("child PID: %d\n", PID);
 #endif
+
+	/* Free wordexp */
+	wordfree(&expanded);
 
 	if (cl->seq[1]) {
 	    close(fds[1]); close(fds[0]);
