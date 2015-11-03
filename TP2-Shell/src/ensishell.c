@@ -206,7 +206,7 @@ int parse_and_execute_line(char **line)
 	in = open(cl->in, O_RDONLY);
     int out = 1;		/* output file desc: stdout by default */
     if (cl->out)
-	out = open(cl->out, O_WRONLY | O_CREAT);
+	out = open(cl->out, O_WRONLY | O_CREAT | O_TRUNC);
 
     /* If first command is "jobs" print PID */
     if (!strncmp(cl->seq[0][0], "jobs", 4)) {
