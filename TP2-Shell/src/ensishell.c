@@ -27,7 +27,6 @@
 
 #define DEBUG_COMMAND_LINE 0
 #define DEBUG_PID 0
-#define DEBUG_JOBS 0
 
 void terminate(char *line);
 
@@ -76,9 +75,6 @@ void print_shell_history() {
 /* Delete all process terminated*/
 void update_shell_history(shell_history *liste){
 
-#if DEBUG_JOBS
-    printf("-->Updating Shell_history...\n");
-#endif
     shell_cmd *sentinelle = malloc(sizeof(shell_cmd));
     insert_shell_cmd(&BACKGROUND_PID, sentinelle);
 
@@ -92,9 +88,6 @@ void update_shell_history(shell_history *liste){
 	if (suiv != NULL) {
 
 	    pid_return = waitpid(suiv->PID, &status, WNOHANG);
-#if DEBUG_JOBS
-	    printf("WAITPID RETURN : %d\n", pid_return);
-#endif
 
 	    if (pid_return == suiv->PID) {
 		cour->next = suiv->next;
@@ -109,9 +102,7 @@ void update_shell_history(shell_history *liste){
 
     liste->head = liste->head->next;
 
-#if DEBUG_JOBS
-    printf("-->Update terminated...\n");
-#endif
+    free(sentinelle);
 }
 
 int executer(char *line)
@@ -203,16 +194,7 @@ int parse_and_execute_line(char **line)
     /* If first command is "jobs" print PID */
     if (!strncmp(cl->seq[0][0], "jobs", 4)) {
 
-#if DEBUG_JOBS
-	printf("Shell_History : ");
-	print_shell_history();
-#endif
 	update_shell_history(&BACKGROUND_PID);
-
-#if DEBUG_JOBS
-	printf("Shell_history updated : ");
-	print_shell_history();
-#endif
 
 	if (BACKGROUND_PID.head == NULL)
 	    printf("No background processes\n");
@@ -229,7 +211,9 @@ int parse_and_execute_line(char **line)
 		cour = cour->next;
 	    }
 	}
+
 	return 0;
+
     } else if (cl->seq[1]) {    /* Execute command line, command has pipe*/
 	if (cl->seq[2])
 	    fprintf(stderr,
