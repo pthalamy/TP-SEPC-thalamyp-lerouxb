@@ -218,7 +218,11 @@ void execute_command(struct cmdline *cl, int n, int fdin, int fdout)
 	    strcpy(new->command[0], cl->seq[n][0]);
 
 	    insert_shell_cmd(&BACKGROUND_PID, new);
+<<<<<<< HEAD
 	} else if (cl->seq[n + 1] == NULL)
+=======
+	} else
+>>>>>>> parent of 69902dc... Implement multipiping support
 	    waitpid(PID, NULL, 0);
 
 	break;
