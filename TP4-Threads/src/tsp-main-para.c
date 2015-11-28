@@ -8,6 +8,7 @@
 #include <complex.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "tsp-types.h"
 #include "tsp-job.h"
@@ -19,8 +20,8 @@
 
 
 /* macro de mesure de temps, retourne une valeur en nanosecondes */
-#define TIME_DIFF(t1, t2) \
-  ((t2.tv_sec - t1.tv_sec) * 1000000000ll + (long long int) (t2.tv_nsec - t1.tv_nsec))
+#define TIME_DIFF(t1, t2)						\
+    ((t2.tv_sec - t1.tv_sec) * 1000000000ll + (long long int) (t2.tv_nsec - t1.tv_nsec))
 
 
 /* tableau des distances */
@@ -46,14 +47,14 @@ static void generate_tsp_jobs (struct tsp_queue *q, int hops, int len, uint64_t 
         (*cuts)++ ;
         return;
     }
-    
+
     if (hops == depth) {
         /* On enregistre du travail à faire plus tard... */
-      add_job (q, path, hops, len, vpres);
+	add_job (q, path, hops, len, vpres);
     } else {
-        int me = path [hops - 1];        
+        int me = path [hops - 1];
         for (int i = 0; i < nb_towns; i++) {
-	  if (!present (i, hops, path, vpres)) {
+	    if (!present (i, hops, path, vpres)) {
                 path[hops] = i;
 		vpres |= (1<<i);
                 int dist = tsp_distance[me][i];
@@ -65,8 +66,8 @@ static void generate_tsp_jobs (struct tsp_queue *q, int hops, int len, uint64_t 
 }
 
 static void usage(const char *name) {
-  fprintf (stderr, "Usage: %s [-s] <ncities> <seed> <nthreads>\n", name);
-  exit (-1);
+    fprintf (stderr, "Usage: %s [-s] <ncities> <seed> <nthreads>\n", name);
+    exit (-1);
 }
 
 int main (int argc, char **argv)
@@ -83,36 +84,36 @@ int main (int argc, char **argv)
     /* lire les arguments */
     int opt;
     while ((opt = getopt(argc, argv, "spq")) != -1) {
-      switch (opt) {
-      case 's':
-	affiche_sol = true;
-	break;
-      case 'p':
-	affiche_progress = true;
-	break;
-      case 'q':
-	quiet = true;
-	break;
-      default:
-	usage(argv[0]);
-	break;
-      }
+	switch (opt) {
+	case 's':
+	    affiche_sol = true;
+	    break;
+	case 'p':
+	    affiche_progress = true;
+	    break;
+	case 'q':
+	    quiet = true;
+	    break;
+	default:
+	    usage(argv[0]);
+	    break;
+	}
     }
 
     if (optind != argc-3)
-      usage(argv[0]);
+	usage(argv[0]);
 
     nb_towns = atoi(argv[optind]);
     myseed = atol(argv[optind+1]);
     nb_threads = atoi(argv[optind+2]);
     assert(nb_towns > 0);
     assert(nb_threads > 0);
-   
+
     minimum = INT_MAX;
-      
+
     /* generer la carte et la matrice de distance */
     if (! quiet)
-      fprintf (stderr, "ncities = %3d\n", nb_towns);
+	fprintf (stderr, "ncities = %3d\n", nb_towns);
     genmap ();
 
     init_queue (&q);
@@ -126,7 +127,7 @@ int main (int argc, char **argv)
     /* mettre les travaux dans la file d'attente */
     generate_tsp_jobs (&q, 1, 0, vpres, path, &cuts, sol, & sol_len, 3);
     no_more_jobs (&q);
-   
+
     /* calculer chacun des travaux */
     tsp_path_t solution;
     memset (solution, -1, MAX_TOWNS * sizeof (int));
@@ -134,7 +135,7 @@ int main (int argc, char **argv)
     while (!empty_queue (&q)) {
         int hops = 0, len = 0;
         get_job (&q, solution, &hops, &len, &vpres);
-	
+
 	// le noeud est moins bon que la solution courante
 	if (minimum < INT_MAX
 	    && (nb_towns - hops) > 10
@@ -142,15 +143,15 @@ int main (int argc, char **argv)
 		 || (lower_bound_using_lp(solution, hops, len, vpres)) >= minimum)
 	    )
 
-	  continue;
+	    continue;
 
 	tsp (hops, len, vpres, solution, &cuts, sol, &sol_len);
     }
-    
+
     clock_gettime (CLOCK_REALTIME, &t2);
 
     if (affiche_sol)
-      print_solution_svg (sol, sol_len);
+	print_solution_svg (sol, sol_len);
 
     perf = TIME_DIFF (t1,t2);
     printf("<!-- # = %d seed = %ld len = %d threads = %d time = %lld.%03lld ms ( %lld coupures ) -->\n",
