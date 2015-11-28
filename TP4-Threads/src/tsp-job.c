@@ -95,3 +95,7 @@ int get_job (struct tsp_queue *q, tsp_path_t p, int *hops, int *len, uint64_t *v
 void no_more_jobs (struct tsp_queue *q) {
     q->end = 1;
 }
+
+void destroy_queue(struct tsp_queue *q) {
+    pthread_mutex_destroy(&q->jobsMutex);
+}

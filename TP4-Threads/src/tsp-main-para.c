@@ -23,11 +23,12 @@
 #define TIME_DIFF(t1, t2)						\
     ((t2.tv_sec - t1.tv_sec) * 1000000000ll + (long long int) (t2.tv_nsec - t1.tv_nsec))
 
+static void *END_SUCCESS = (void *)123456789L;
 
 /* tableau des distances */
 tsp_distance_matrix_t tsp_distance ={};
 
-/** Param�tres **/
+/** Paramètres **/
 
 /* nombre de villes */
 int nb_towns=10;
@@ -41,7 +42,46 @@ bool affiche_sol= false;
 bool affiche_progress=false;
 bool quiet=false;
 
-static void generate_tsp_jobs (struct tsp_queue *q, int hops, int len, uint64_t vpres, tsp_path_t path, long long int *cuts, tsp_path_t sol, int *sol_len, int depth)
+/* Variables globales pour accès concurrent*/
+tsp_path_t solution;
+long long int cuts = 0;
+int sol_len= 0;
+
+typedef struct {
+    struct tsp_queue q;
+    uint64_t vpres;
+    tsp_path_t *sol;
+} thread_args;
+
+static void *compute_jobs(void * args) {
+    thread_args *my_args = args;
+
+    struct tsp_queue q = my_args->q;
+    uint64_t vpres = my_args->vpres;
+    tsp_path_t *sol = my_args->sol;
+
+    while (!empty_queue (&q)) {
+        int hops = 0, len = 0;
+        get_job (&q, solution, &hops, &len, &vpres);
+
+	// le noeud est moins bon que la solution courante
+	if (minimum < INT_MAX
+	    && (nb_towns - hops) > 10
+	    && ( (lower_bound_using_hk(solution, hops, len, vpres)) >= minimum
+		 || (lower_bound_using_lp(solution, hops, len, vpres)) >= minimum)
+	    )
+
+	    continue;
+
+	tsp (hops, len, vpres, solution, &cuts, *sol, &sol_len);
+    }
+
+    return END_SUCCESS;
+}
+
+static void generate_tsp_jobs (struct tsp_queue *q, int hops, int len, uint64_t vpres,
+			       tsp_path_t path, long long int *cuts, tsp_path_t sol,
+			       int *sol_len, int depth)
 {
     if (len >= minimum) {
         (*cuts)++ ;
@@ -49,7 +89,7 @@ static void generate_tsp_jobs (struct tsp_queue *q, int hops, int len, uint64_t 
     }
 
     if (hops == depth) {
-        /* On enregistre du travail � faire plus tard... */
+        /* On enregistre du travail à faire plus tard... */
 	add_job (q, path, hops, len, vpres);
     } else {
         int me = path [hops - 1];
@@ -76,8 +116,6 @@ int main (int argc, char **argv)
     tsp_path_t path;
     uint64_t vpres=0;
     tsp_path_t sol;
-    int sol_len;
-    long long int cuts = 0;
     struct tsp_queue q;
     struct timespec t1, t2;
 
@@ -128,24 +166,30 @@ int main (int argc, char **argv)
     generate_tsp_jobs (&q, 1, 0, vpres, path, &cuts, sol, & sol_len, 3);
     no_more_jobs (&q);
 
-    /* calculer chacun des travaux */
-    tsp_path_t solution;
+    /* Preparation au calcul de chacun des travaux en parallèle */
     memset (solution, -1, MAX_TOWNS * sizeof (int));
     solution[0] = 0;
-    while (!empty_queue (&q)) {
-        int hops = 0, len = 0;
-        get_job (&q, solution, &hops, &len, &vpres);
 
-	// le noeud est moins bon que la solution courante
-	if (minimum < INT_MAX
-	    && (nb_towns - hops) > 10
-	    && ( (lower_bound_using_hk(solution, hops, len, vpres)) >= minimum
-		 || (lower_bound_using_lp(solution, hops, len, vpres)) >= minimum)
-	    )
+    /* Mise en place des arguments */
+    thread_args compute_jobs_args;
+    compute_jobs_args.q = q;
+    compute_jobs_args.vpres = vpres;
+    compute_jobs_args.sol = &sol;
 
-	    continue;
+    /* Creation des threads pour le calcul concurrentiel */
+    pthread_t threads_pid[nb_threads];
+    for (int i = 0; i < nb_threads; i++) {
+	pthread_create(&threads_pid[i], NULL, compute_jobs , (void *)&compute_jobs_args);
+    }
 
-	tsp (hops, len, vpres, solution, &cuts, sol, &sol_len);
+    /* On attend qu'ils aient tous terminé pour continuer */
+    void *status;
+    for (int i = 0; i < nb_threads; i++) {
+	pthread_join(threads_pid[i], &status);
+	if (status != END_SUCCESS)
+	    fprintf(stderr,
+		    "error: Thread %i didn't terminate correctly - sucess =  %p\n",
+		    i, status);
     }
 
     clock_gettime (CLOCK_REALTIME, &t2);
