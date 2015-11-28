@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
+#include <pthread.h>
+
 #include "tsp-types.h"
 #include "tsp-tsp.h"
 #include "tsp-lp.h"
@@ -100,7 +102,12 @@ int lower_bound_using_lp(tsp_path_t path, int hops, int len, uint64_t vpres) {
 	return 0;
     }
 
-    FILE *f = fopen("toto.lp","w");
+    /* Formattage du nom du fichier lp selon l'id du thread */
+    char filename[32];
+    snprintf(filename, 32, "%lx", pthread_self());
+    strcat(filename, ".txt");
+
+    FILE *f = fopen(filename,"w");
     save_lp(f, path, hops, len, vpres);
     fclose(f);
 
