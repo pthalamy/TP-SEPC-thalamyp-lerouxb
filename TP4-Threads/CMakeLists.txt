@@ -14,7 +14,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Werror -O3 -std=gnu++
 #########
 # Vous devez editer la ligne suivante pour y mettre vos logins
 #########
-set(LOGINS login1 login2 login3)
+set(LOGINS lerouxb pthalamy)
 list(SORT LOGINS)
 
 if (LOGINS MATCHES "login[123]")
@@ -45,7 +45,7 @@ endif(EXISTS /opt/gnat/bin)
 # Ordre de préférence: glpsol, symphony, cbc
 # Raison: le programme linéaire est stupide, glpk est le
 # solveur le plus rapide, parce que le plus lèger à démarrer
-# 
+#
 # Si le programme linéaire devient plus intelligent, il faudra revoir
 # les choix
 
