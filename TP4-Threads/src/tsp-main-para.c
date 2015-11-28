@@ -54,7 +54,7 @@ typedef struct {
 } thread_args;
 
 static void *compute_jobs(void * args) {
-    printf("Thread %lx starts!\n", pthread_self());
+    printf("Thread: %lx starts!\n", pthread_self());
 
     thread_args *my_args = args;
 
@@ -78,8 +78,7 @@ static void *compute_jobs(void * args) {
 	tsp (hops, len, vpres, solution, &cuts, *sol, &sol_len);
     }
 
-    printf("Thread %lx terminates!\n", pthread_self());
-
+    printf("Thread: %lx terminates!\n", pthread_self());
     return END_SUCCESS;
 }
 
