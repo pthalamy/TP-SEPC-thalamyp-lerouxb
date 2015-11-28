@@ -67,15 +67,17 @@ static void *compute_jobs(void * args) {
         get_job (&q, solution, &hops, &len, &vpres);
 
 	// le noeud est moins bon que la solution courante
+	pthread_mutex_lock(&minMut); 
 	if (minimum < INT_MAX
 	    && (nb_towns - hops) > 10
 	    && ( (lower_bound_using_hk(solution, hops, len, vpres)) >= minimum
 		 || (lower_bound_using_lp(solution, hops, len, vpres)) >= minimum)
-	    )
-
+	    ){
+	    pthread_mutex_unlock(&minMut);
 	    continue;
-
+	}
 	tsp (hops, len, vpres, solution, &cuts, *sol, &sol_len);
+	pthread_mutex_unlock(&minMut);
     }
 
     printf("Thread %lx terminates!\n", pthread_self());
@@ -150,7 +152,8 @@ int main (int argc, char **argv)
     nb_threads = atoi(argv[optind+2]);
     assert(nb_towns > 0);
     assert(nb_threads > 0);
-
+    pthread_mutex_init(&minMut, NULL);
+    
     minimum = INT_MAX;
 
     /* generer la carte et la matrice de distance */
