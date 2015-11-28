@@ -1,16 +1,19 @@
+
 #ifndef _TSP_JOB_H
 #define _TSP_JOB_H
 /* gestion des files de jobs */
 
 #include <stdint.h>
+#include <pthread.h>
 
 /* Structure pour la tête de file */
 struct tsp_queue {
-   struct tsp_cell *first;
-   struct tsp_cell *last;
-   int end;
-   int nbmax;
-   int nb;
+    struct tsp_cell *first;
+    struct tsp_cell *last;
+    int end;
+    int nbmax;
+    int nb;
+    pthread_mutex_t jobsMutex;
 };
 
 /* Initialise la file [q]. */
