@@ -30,7 +30,10 @@ void init_queue (struct tsp_queue *q) {
 }
 
 int empty_queue (struct tsp_queue *q) {
-    return ((q->first == 0) && (q->end == 1));
+    pthread_mutex_lock(&q->jobsMutex);
+    int ret = ((q->first == 0) && (q->end == 1));
+    pthread_mutex_unlock(&q->jobsMutex);
+    return ret;
 }
 
 void add_job (struct tsp_queue *q, tsp_path_t p, int hops, int len, uint64_t vpres) {
@@ -66,6 +69,7 @@ int get_job (struct tsp_queue *q, tsp_path_t p, int *hops, int *len, uint64_t *v
     struct tsp_cell *ptr;
 
     if (q->first == 0) {
+	pthread_mutex_unlock(&q->jobsMutex);
 	return 0;
     }
 
@@ -88,7 +92,6 @@ int get_job (struct tsp_queue *q, tsp_path_t p, int *hops, int *len, uint64_t *v
 	printf("<!- %d / %d %% ->\n",q->nb, q->nbmax);
 
     pthread_mutex_unlock(&q->jobsMutex);
-
     return 1;
 }
 

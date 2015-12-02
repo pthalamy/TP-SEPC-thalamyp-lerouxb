@@ -28,7 +28,7 @@ static void *END_SUCCESS = (void *)123456789L;
 /* tableau des distances */
 tsp_distance_matrix_t tsp_distance ={};
 
-/** Paramètres **/
+/**q Paramètres **/
 
 /* nombre de villes */
 int nb_towns=10;
@@ -46,6 +46,9 @@ bool quiet=false;
 tsp_path_t solution;
 long long int cuts = 0;
 int sol_len= 0;
+
+/* Global Variables Mutexes */
+pthread_mutex_t tsp_mutex;
 
 typedef struct {
     struct tsp_queue q;
@@ -67,7 +70,7 @@ static void *compute_jobs(void * args) {
         get_job (&q, solution, &hops, &len, &vpres);
 
 	// le noeud est moins bon que la solution courante
-	pthread_mutex_lock(&minMut); 
+	pthread_mutex_lock(&minMut);
 	if (minimum < INT_MAX
 	    && (nb_towns - hops) > 10
 	    && ( (lower_bound_using_hk(solution, hops, len, vpres)) >= minimum
@@ -76,8 +79,11 @@ static void *compute_jobs(void * args) {
 	    pthread_mutex_unlock(&minMut);
 	    continue;
 	}
-	tsp (hops, len, vpres, solution, &cuts, *sol, &sol_len);
 	pthread_mutex_unlock(&minMut);
+
+	pthread_mutex_lock(&tsp_mutex);
+	tsp (hops, len, vpres, solution, &cuts, *sol, &sol_len);
+	pthread_mutex_unlock(&tsp_mutex);
     }
 
     printf("Thread: %lx terminates!\n", pthread_self());
@@ -152,7 +158,7 @@ int main (int argc, char **argv)
     assert(nb_towns > 0);
     assert(nb_threads > 0);
     pthread_mutex_init(&minMut, NULL);
-    
+
     minimum = INT_MAX;
 
     /* generer la carte et la matrice de distance */
@@ -170,6 +176,7 @@ int main (int argc, char **argv)
 
     /* mettre les travaux dans la file d'attente */
     generate_tsp_jobs (&q, 1, 0, vpres, path, &cuts, sol, & sol_len, 3);
+    pthread_mutex_init(&tsp_mutex ,NULL);
     no_more_jobs (&q);
 
     /* Preparation au calcul de chacun des travaux en parallèle */
@@ -194,7 +201,7 @@ int main (int argc, char **argv)
 	pthread_join(threads_pid[i], &status);
 	if (status != END_SUCCESS)
 	    fprintf(stderr,
-		    "error: Thread %i didn't terminate correctly - sucess =  %p\n",
+		    "error: Thread %i didn't terminate correctly - success =  %p\n",
 		    i, status);
     }
 
@@ -207,6 +214,8 @@ int main (int argc, char **argv)
     printf("<!-- # = %d seed = %ld len = %d threads = %d time = %lld.%03lld ms ( %lld coupures ) -->\n",
 	   nb_towns, myseed, sol_len, nb_threads,
 	   perf/1000000ll, perf%1000000ll, cuts);
+
+    destroy_queue(&q);
 
     return 0 ;
 }

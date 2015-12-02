@@ -33,4 +33,7 @@ extern void no_more_jobs (struct tsp_queue *q) ;
  * les jobs ont été enlevés), 0 sinon. */
 extern int empty_queue (struct tsp_queue *q);
 
+/* Libere la mutex de la queue */
+extern void destroy_queue(struct tsp_queue *q);
+
 #endif /* _TSP_JOBS */
