@@ -208,5 +208,6 @@ int main (int argc, char **argv)
 	   nb_towns, myseed, sol_len, nb_threads,
 	   perf/1000000ll, perf%1000000ll, cuts);
 
+    pthread_mutex_destroy(&minMut);
     return 0 ;
 }
