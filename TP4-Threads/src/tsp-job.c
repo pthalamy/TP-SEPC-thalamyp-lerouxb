@@ -26,19 +26,17 @@ void init_queue (struct tsp_queue *q) {
     q->end = 0;
     q->nbmax = 0;
     q->nb = 0;
-    pthread_mutex_init(&q->jobsMutex ,NULL);
 }
 
 int empty_queue (struct tsp_queue *q) {
-    pthread_mutex_lock(&q->jobsMutex);
+    pthread_mutex_lock(&q->jobs_mutex);
     int ret = ((q->first == 0) && (q->end == 1));
-    pthread_mutex_unlock(&q->jobsMutex);
+    pthread_mutex_unlock(&q->jobs_mutex);
+
     return ret;
 }
 
 void add_job (struct tsp_queue *q, tsp_path_t p, int hops, int len, uint64_t vpres) {
-    pthread_mutex_lock(&q->jobsMutex);
-
     struct tsp_cell *ptr;
 
     ptr = malloc (sizeof (*ptr));
@@ -60,16 +58,15 @@ void add_job (struct tsp_queue *q, tsp_path_t p, int hops, int len, uint64_t vpr
     }
     q->nbmax ++;
     q->nb ++;
-
-    pthread_mutex_unlock(&q->jobsMutex);
 }
 
 int get_job (struct tsp_queue *q, tsp_path_t p, int *hops, int *len, uint64_t *vpres) {
-    pthread_mutex_lock(&q->jobsMutex);
+    pthread_mutex_lock(&q->jobs_mutex);
     struct tsp_cell *ptr;
 
     if (q->first == 0) {
-	pthread_mutex_unlock(&q->jobsMutex);
+	pthread_mutex_unlock(&q->jobs_mutex);
+
 	return 0;
     }
 
@@ -83,7 +80,10 @@ int get_job (struct tsp_queue *q, tsp_path_t p, int *hops, int *len, uint64_t *v
     *len = ptr->tsp_job.len;
     *hops = ptr->tsp_job.hops;
     *vpres = ptr->tsp_job.vpres;
+
+    pthread_mutex_lock(&solution_mutex);
     memcpy (p, ptr->tsp_job.path, *hops * sizeof(p[0]));
+    pthread_mutex_unlock(&solution_mutex);
 
     free (ptr);
 
@@ -91,14 +91,11 @@ int get_job (struct tsp_queue *q, tsp_path_t p, int *hops, int *len, uint64_t *v
     if (affiche_progress)
 	printf("<!- %d / %d %% ->\n",q->nb, q->nbmax);
 
-    pthread_mutex_unlock(&q->jobsMutex);
+    pthread_mutex_unlock(&q->jobs_mutex);
+
     return 1;
 }
 
 void no_more_jobs (struct tsp_queue *q) {
     q->end = 1;
-}
-
-void destroy_queue(struct tsp_queue *q) {
-    pthread_mutex_destroy(&q->jobsMutex);
 }

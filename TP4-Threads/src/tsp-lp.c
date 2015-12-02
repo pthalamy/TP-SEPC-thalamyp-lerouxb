@@ -108,7 +108,11 @@ int lower_bound_using_lp(tsp_path_t path, int hops, int len, uint64_t vpres) {
     strcat(filename, ".txt");
 
     FILE *f = fopen(filename,"w");
+
+    pthread_mutex_lock(&solution_mutex);
     save_lp(f, path, hops, len, vpres);
+    pthread_mutex_unlock(&solution_mutex);
+
     fclose(f);
 
     double val=0.0;

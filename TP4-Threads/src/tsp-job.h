@@ -13,7 +13,7 @@ struct tsp_queue {
     int end;
     int nbmax;
     int nb;
-    pthread_mutex_t jobsMutex;
+    pthread_mutex_t jobs_mutex;
 };
 
 /* Initialise la file [q]. */
@@ -32,8 +32,5 @@ extern void no_more_jobs (struct tsp_queue *q) ;
 /* Retourne 1 si la file est vide (i.e. no_more_jobs() a été appelé, et tous
  * les jobs ont été enlevés), 0 sinon. */
 extern int empty_queue (struct tsp_queue *q);
-
-/* Libere la mutex de la queue */
-extern void destroy_queue(struct tsp_queue *q);
 
 #endif /* _TSP_JOBS */

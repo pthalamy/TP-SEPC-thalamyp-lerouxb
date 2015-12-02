@@ -11,8 +11,6 @@
 
 /* dernier minimum trouvé */
 int minimum;
-/* Mutex du minimum */
-pthread_mutex_t minMut;
 
 /* résolution du problème du voyageur de commerce */
 int present (int city, int hops, tsp_path_t path, uint64_t vpres)

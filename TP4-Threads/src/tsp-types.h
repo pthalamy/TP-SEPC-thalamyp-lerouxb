@@ -1,6 +1,7 @@
 #ifndef _TSP_TYPES_H
 #define _TSP_TYPES_H
 #include <stdbool.h>
+#include <pthread.h>
 
 #define MAX_TOWNS 40
 
@@ -18,5 +19,8 @@ extern int nb_towns;
 extern long int myseed;
 extern bool affiche_progress;
 extern bool quiet;
+
+/* global mutexes */
+extern pthread_mutex_t solution_mutex;
 
 #endif
