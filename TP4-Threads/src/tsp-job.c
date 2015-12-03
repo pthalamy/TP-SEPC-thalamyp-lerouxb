@@ -81,9 +81,7 @@ int get_job (struct tsp_queue *q, tsp_path_t p, int *hops, int *len, uint64_t *v
     *hops = ptr->tsp_job.hops;
     *vpres = ptr->tsp_job.vpres;
 
-    pthread_mutex_lock(&solution_mutex);
     memcpy (p, ptr->tsp_job.path, *hops * sizeof(p[0]));
-    pthread_mutex_unlock(&solution_mutex);
 
     free (ptr);
 

@@ -74,22 +74,27 @@ static void *compute_jobs(void * args) {
     while (!empty_queue (q)) {
         int hops = 0, len = 0;
 
+	pthread_mutex_lock(&solution_mutex);
         get_job (q, solution, &hops, &len, &vpres);
+	pthread_mutex_unlock(&solution_mutex);
 
 
 	// le noeud est moins bon que la solution courante
+	pthread_mutex_lock(&solution_mutex);
 	if (localMin < INT_MAX
 	    && (nb_towns - hops) > 10
 	    && ( (lower_bound_using_hk(solution, hops, len, vpres)) >= localMin
 		 || (lower_bound_using_lp(solution, hops, len, vpres)) >= localMin)
 	    ){
+	    pthread_mutex_unlock(&solution_mutex);
 	    continue;
 	}
+	pthread_mutex_unlock(&solution_mutex);
 
 	pthread_mutex_lock(&solution_mutex);
 	pthread_mutex_lock(&tsp_mutex);
 	tsp (hops, len, vpres, solution, &cuts, *sol, &sol_len);
-	pthread_mutex_lock(&tsp_mutex);
+	pthread_mutex_unlock(&tsp_mutex);
 	pthread_mutex_unlock(&solution_mutex);
 
 

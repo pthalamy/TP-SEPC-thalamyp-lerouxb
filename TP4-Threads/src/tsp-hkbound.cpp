@@ -21,7 +21,7 @@ typedef Graph::edge_descriptor Edge;
 int lower_bound_using_hk(tsp_path_t path, int hops, int len, uint64_t vpres) {
   Graph g;
 
-  pthread_mutex_lock(&solution_mutex);
+  // pthread_mutex_lock(&solution_mutex);
 
   /* construire le graph complet avec les villes et arêtes restantes */
   for (int i = 0; i < nb_towns; i++) {
@@ -39,7 +39,7 @@ int lower_bound_using_hk(tsp_path_t path, int hops, int len, uint64_t vpres) {
     }
   }
 
-  pthread_mutex_unlock(&solution_mutex);
+  // pthread_mutex_unlock(&solution_mutex);
 
   std::list < Edge > spt;
   kruskal_minimum_spanning_tree ( g, std::back_inserter(spt) );
