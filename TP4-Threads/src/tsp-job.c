@@ -28,6 +28,21 @@ void init_queue (struct tsp_queue *q) {
     q->nb = 0;
 }
 
+void printJobs(struct tsp_queue *q) {
+    printf("NbJobs: ");
+    pthread_mutex_lock(&solution_mutex);
+    int compteur = 0;
+    if (q){
+	struct tsp_cell *temp = q->first;
+	while (temp) {
+	    ++compteur;
+	    temp = temp->next;
+	}
+    }
+    printf("%d\n", compteur);
+    pthread_mutex_unlock(&solution_mutex);
+}
+
 int empty_queue (struct tsp_queue *q) {
     pthread_mutex_lock(&q->jobs_mutex);
     int ret = ((q->first == 0) && (q->end == 1));

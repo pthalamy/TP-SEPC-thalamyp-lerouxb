@@ -58,6 +58,8 @@ typedef struct {
     tsp_path_t *sol;
 } thread_args;
 
+void printJobs(struct tsp_queue *q);
+
 static void *compute_jobs(void * args) {
     printf("Thread: %lx starts!\n", pthread_self());
 
@@ -77,7 +79,6 @@ static void *compute_jobs(void * args) {
 	pthread_mutex_lock(&solution_mutex);
         get_job (q, solution, &hops, &len, &vpres);
 	pthread_mutex_unlock(&solution_mutex);
-
 
 	// le noeud est moins bon que la solution courante
 	pthread_mutex_lock(&solution_mutex);
@@ -200,7 +201,7 @@ int main (int argc, char **argv)
     /* mettre les travaux dans la file d'attente */
     generate_tsp_jobs (&q, 1, 0, vpres, path, &cuts, sol, & sol_len, 3);
     no_more_jobs (&q);
-
+    
     /* Preparation au calcul de chacun des travaux en parallèle */
     memset (solution, -1, MAX_TOWNS * sizeof (int));
     solution[0] = 0;
